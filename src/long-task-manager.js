@@ -35,8 +35,6 @@ function processTasks() {
     if (canProcessMoreTasks()) {
         tryNextTask(function(error) {
             // if error, potentially schedule a retry? depends on error. connection? db? job internal?
-            
-            // scheduleProcessTasks();
         });
     } else {
         increaseBackoff();
@@ -65,7 +63,7 @@ function tryNextTask(done) {
 }
 
 function processTask(task, done) {
-    claim(task);    // was it successful? yes, then continue. Else return done.
+    claim(task);    // was it successful? yes, then continue. Else return done. TODO
 
     console.log(" + Processing (" + task + ")…");
     execute(task, function(error) {
@@ -93,7 +91,7 @@ function getNextTask() {
 }
 
 function claim(task) {
-    // update the tasks list with a claim id.
+    // update the tasks list with a claim id. TODO
     processing.push(task);
 }
 
