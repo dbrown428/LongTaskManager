@@ -1,0 +1,26 @@
+#!/bin/bash
+npm install
+rm -fr build/*
+mkdir -p build/{src,tests}
+
+find src -name "*.js" | sed 's/^src\///' | while read line; do
+  mkdir -p "build/src/$(dirname $line)"
+  cp "src/$line" "build/src/$line"
+done;
+
+find src -name "*.json" | sed 's/^src\///' | while read line; do
+  mkdir -p "build/src/$(dirname $line)"
+  cp "src/$line" "build/src/$line"
+done;
+
+find tests -name "*.js" | sed 's/^tests\///' | while read line; do
+  mkdir -p "build/tests/$(dirname $line)"
+  cp "tests/$line" "build/tests/$line"
+done;
+
+find tests -name "*.json" | sed 's/^tests\///' | while read line; do
+  mkdir -p "build/tests/$(dirname $line)"
+  cp "tests/$line" "build/tests/$line"
+done;
+
+tsc -p tsconfig.json

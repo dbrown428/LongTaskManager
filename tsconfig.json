@@ -1,0 +1,22 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "module": "CommonJS",
+    "rootDirs": [
+      "src/",
+      "tests/"
+    ],
+    "allowJs": true,
+    "alwaysStrict": true,
+    "outDir": "build/",
+    "target": "es6"
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "build",
+    "node_modules"
+  ]
+}
