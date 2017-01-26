@@ -9,7 +9,7 @@ export class Option <T> {
 		this.value = value;
 	}
 
-	public static none(): Option <null> {
+	public static none(): Option <any> {
 		return new Option(null);
 	}
 
@@ -24,7 +24,7 @@ export class Option <T> {
 		return ( ! this.isDefined());
 	}
 
-	public getOrElse(value: any): any {
+	public getOrElse(value: T): any {
 		if (this.isDefined()) {
 			return this.value;
 		} else {
