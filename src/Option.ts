@@ -32,7 +32,11 @@ export class Option <T> {
 		}
 	}
 
-	public get(): T | null {
-		return this.value;
+	public get(): T {
+		if (this.value) {
+			return this.value;
+		} else {
+			throw new Error("Check if the value isDefined before calling 'get', or use 'getOrElse'.");
+		}
 	}
 }

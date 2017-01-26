@@ -10,10 +10,16 @@ describe("Generic Option", () => {
 	});
 
 	it("Should be instantiated with no value.", () => {
-		const option: Option <number> = Option.none();
+		const option: Option <string> = Option.none();
 		assert.isFalse(option.isDefined());
 		assert.isTrue(option.isEmpty());
-		assert.equal(null, option.get());
+	});
+
+	it("Should throw an exception when the developer attempts to get an undefined value.", () => {
+		const option: Option <number> = Option.none();
+		assert.throws(() => {
+			option.get();
+		}, Error);
 	});
 
 	it("Should return the supplied alternate value when not defined.", () => {
