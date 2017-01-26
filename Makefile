@@ -11,5 +11,11 @@ clean: ;@echo "Cleaning ${PROJECT}"; \
 test-unit: ;@echo "Unit Testing ${PROJECT}"; \
 	node_modules/.bin/mocha --compilers ts:ts-node/register,tsx:ts-node/register --recursive -R dot "tests/unit/**/*.spec.ts"
 
-.PHONY: test test-unit default
+test-integration: ;@echo "Integration Testing ${PROJECT}"; \
+	node_modules/.bin/mocha --compilers ts:ts-node/register,tsx:ts-node/register --recursive -R dot "tests/integration/**/*.spec.ts"
+
+test-all: ;@echo "Testing ${PROJECT}"; \
+	node_modules/.bin/mocha --compilers ts:ts-node/register,tsx:ts-node/register --recursive -R dot "tests/**/*.spec.ts"
+
+.PHONY: test test-unit test-integration default
 	
