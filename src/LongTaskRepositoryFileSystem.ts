@@ -162,9 +162,34 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 
 	update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean> {
 		return new Promise((resolve, reject) => {
+			const index = this.indexForTaskId(taskId);
 
-			// todo
+			// Change to file system...
+			const row = this.table[index];
+			
+			// Should this logic be in the repository or the layer above? How smart
+			// should the repository be?
 
+			if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
+				reject("You can only change a queued status to cancelled with an update.");
+			} else {
+				const updatedRow = new DataRow(
+					row.identifier,
+					row.ownerId,
+					row.searchKey,
+					row.type,
+					row.params,
+					status,
+					progress.state,
+					progress.currentStep,
+					progress.maximumSteps,
+					row.claimId
+				);
+
+				// Change to file system...
+				this.table[index] = updatedRow;
+				resolve(true);
+			}
 		});
 	}
 

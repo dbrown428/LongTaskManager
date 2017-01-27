@@ -5,7 +5,8 @@ import {UserId} from "../../src/UserId";
 import {ClaimId} from "../../src/ClaimId";
 import {LongTask} from "../../src/LongTask";
 import {LongTaskId} from "../../src/LongTaskId";
-import {LongTaskAttributes} from "../../src/LongTaskAttributes";
+import {LongTaskProgress} from "../../src/LongTaskProgress";
+import {LongTaskAttributes, LongTaskStatus} from "../../src/LongTaskAttributes";
 import {LongTaskRepositoryFileSystem} from "../../src/LongTaskRepositoryFileSystem";
 
 describe("Long task repository file system", () => {
@@ -114,8 +115,45 @@ describe("Long task repository file system", () => {
 	});
 
 	describe("Update", () => {
-		it("Should update the progress of a task.");
-		it("Should update the task status to completed.");
+		it("Should not allow status change from queued to processing, failed, or completed.", () => {
+			const repository = new LongTaskRepositoryFileSystem;
+
+			return Promise.resolve().then(() => {
+				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
+			}).then((taskId: LongTaskId) => {
+				const progress: LongTaskProgress = {
+					state: null, 
+					currentStep: null, 
+					maximumSteps: null
+				};
+				const status = LongTaskStatus.Processing;
+				return repository.update(taskId, progress, status);
+			}).catch((error) => {
+				assert.isNotNull(error);
+			});
+		});
+
+		it("Should update the progress of a task.", () => {
+			const repository = new LongTaskRepositoryFileSystem;
+
+			return Promise.resolve().then(() => {
+				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
+			}).then((taskId: LongTaskId) => {
+				const progress: LongTaskProgress = {
+					state: "{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 
+					currentStep: 4, 
+					maximumSteps: 5
+				};
+				const status = LongTaskStatus.Processing;
+
+				return Promise.all([
+					repository.claim(taskId, new ClaimId("7")),
+					repository.update(taskId, progress, status),
+				]);
+			}).then((values: Array <boolean>) => {
+				assert.isTrue(values[1]);
+			});
+		});
 	});
 	
 	describe("Cancel", () => {
