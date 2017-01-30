@@ -121,11 +121,7 @@ describe("Long task repository file system", () => {
 			return Promise.resolve().then(() => {
 				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
 			}).then((taskId: LongTaskId) => {
-				const progress: LongTaskProgress = {
-					state: null, 
-					currentStep: null, 
-					maximumSteps: null
-				};
+				const progress = LongTaskProgress.none();
 				const status = LongTaskStatus.Processing;
 				return repository.update(taskId, progress, status);
 			}).catch((error) => {
@@ -139,12 +135,8 @@ describe("Long task repository file system", () => {
 			return Promise.resolve().then(() => {
 				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
 			}).then((taskId: LongTaskId) => {
-				const progress: LongTaskProgress = {
-					state: "{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 
-					currentStep: 4, 
-					maximumSteps: 5
-				};
 				const status = LongTaskStatus.Processing;
+				const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 4, 5);
 
 				return Promise.all([
 					repository.claim(taskId, new ClaimId("7")),

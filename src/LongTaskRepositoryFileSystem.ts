@@ -149,11 +149,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 
 	private hydrateTaskFrom(row: DataRow): LongTask {
 		const identifier = new LongTaskId(row.identifier);
-		const progress: LongTaskProgress = {
-			state: row.progressState, 
-			currentStep: row.progressCurrentStep, 
-			maximumSteps: row.progressMaximumSteps
-		};
+		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps(row.progressState, row.progressCurrentStep, row.progressMaximumSteps);
 		const attributes = new LongTaskAttributes(row.type, row.params, row.status, progress);
 		const task = new LongTask(identifier, attributes);
 

@@ -4,6 +4,8 @@ import {ClaimId} from "./ClaimId";
 import {Promise} from 'es6-promise';
 import {LongTask} from "./LongTask";
 import {LongTaskId} from "./LongTaskId";
+import {LongTaskStatus} from "./LongTaskAttributes";
+import {LongTaskProgress} from "./LongTaskProgress";
 
 export interface LongTaskRepository {
 	/**
