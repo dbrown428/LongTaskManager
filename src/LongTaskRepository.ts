@@ -22,7 +22,7 @@ export interface LongTaskRepository {
 	 * Retrieve the next task that is queued.
 	 * @return A task may or may not be defined.
 	 */
-	getNextTask(): Promise <Option <Task>>;
+	getNextTask(): Promise <Option <LongTask>>;
 
 	/**
 	 * Claim a job for processing.
