@@ -112,6 +112,23 @@ describe("Long task repository file system", () => {
 				assert.isFalse(values[1]);
 			});
 		});
+
+		it("Should be able to release a claimed task.", () => {
+			const repository = new LongTaskRepositoryFileSystem;
+
+			return Promise.resolve().then(() => {
+				return repository.add("sweet-job", "{teacherId: 2, classroomId:8}", new UserId("3"), "happy");
+			}).then((taskId: LongTaskId) => {
+				return Promise.all([
+					repository.claim(taskId, new ClaimId("3")),
+					repository.release(taskId),
+				]);
+			}).then((values: Array <boolean>) => {
+				return repository.getNextTask();
+			}).then((nextTask: Option <LongTask>) => {
+				assert.isTrue(nextTask.isDefined());
+			});
+		});
 	});
 
 	describe("Update", () => {

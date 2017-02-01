@@ -25,13 +25,19 @@ export interface LongTaskRepository {
 	getNextTask(): Promise <Option <LongTask>>;
 
 	/**
-	 * Claim a job for processing.
+	 * Claim a task for processing.
 	 * @param  taskId   The task the system wants to claim.
 	 * @param  claimId	Expecting the claim identifier.
 	 * @return true if the claim was successful, false otherwise.
 	 */
 	claim(taskId: LongTaskId, claim: ClaimId): Promise <boolean>;
-	// release? <- if a job dies, we need to release it so it can be picked up again.
+
+	/**
+	 * Release (unclaim) a task so it can be picked up for processing by again.
+	 * @param  taskId	The task we want to release.
+	 * @return The result of the release is returned when the promise is resolved.
+	 */
+	release(taskId: LongTaskId): Promise <boolean>;
 
 	/**
 	 * Update the task with progress and status changes.

@@ -100,32 +100,63 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 			// Change to file system...
 			const row: DataRow = this.table[index];
 
+			// how can this conditional be better organized?
 			if (this.isClaimed(row)) {
 				resolve(false);
+			} else {
+				const status = LongTaskStatus.Processing;
+				const updatedRow = new DataRow(
+					row.identifier,
+					row.ownerId,
+					row.searchKey,
+					row.type,
+					row.params,
+					status,
+					row.progressState,
+					row.progressCurrentStep,
+					row.progressMaximumSteps,
+					claimId.value
+				);
+
+				// Change to file system...
+				this.table[index] = updatedRow;
+				resolve(true);
 			}
-
-			const status = LongTaskStatus.Processing;
-			const updatedRow = new DataRow(
-				row.identifier,
-				row.ownerId,
-				row.searchKey,
-				row.type,
-				row.params,
-				status,
-				row.progressState,
-				row.progressCurrentStep,
-				row.progressMaximumSteps,
-				claimId.value
-			);
-
-			// Change to file system...
-			this.table[index] = updatedRow;
-			resolve(true);
 		});
 	}
 
 	private isClaimed(row: DataRow): boolean {
 		return (row.claimId != null);
+	}
+
+	public release(taskId: LongTaskId): Promise <boolean> {
+		return new Promise((resolve, reject) => {
+			const index = this.indexForTaskId(taskId);
+			const row: DataRow = this.table[index];
+
+			// how can this conditional be better organized?
+			if (this.isClaimed(row)) {
+				const status = LongTaskStatus.Queued;
+				const updatedRow = new DataRow(
+					row.identifier,
+					row.ownerId,
+					row.searchKey,
+					row.type,
+					row.params,
+					status,
+					row.progressState,
+					row.progressCurrentStep,
+					row.progressMaximumSteps,
+					null
+				);
+
+				// Change to file system...
+				this.table[index] = updatedRow;
+				resolve(true);
+			} else {
+				resolve(false);
+			}
+		});
 	}
 
 	private indexForTaskId(taskId: LongTaskId): number {
@@ -134,6 +165,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 	
 	public getNextTask(): Promise <Option <LongTask>> {
 		return new Promise((resolve, reject) => {
+			
 			// Change to file system...
 			for (let row of this.table) {
 				if (row.status == LongTaskStatus.Queued) {
@@ -149,8 +181,17 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 
 	private hydrateTaskFrom(row: DataRow): LongTask {
 		const identifier = new LongTaskId(row.identifier);
-		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps(row.progressState, row.progressCurrentStep, row.progressMaximumSteps);
-		const attributes = new LongTaskAttributes(row.type, row.params, row.status, progress);
+		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps(
+			row.progressState,
+			row.progressCurrentStep, 
+			row.progressMaximumSteps
+		);
+		const attributes = new LongTaskAttributes(
+			row.type, 
+			row.params, 
+			row.status, 
+			progress
+		);
 		const task = new LongTask(identifier, attributes);
 
 		return task;
@@ -163,8 +204,8 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 			// Change to file system...
 			const row = this.table[index];
 			
-			// Should this logic be in the repository or the layer above? How smart
-			// should the repository be?
+			// Should this logic be in the repository or the layer above? How smart should the repository be?
+			// - this feels like it should be moved to task manager.
 
 			if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
 				reject("You can only change a queued status to cancelled with an update.");
