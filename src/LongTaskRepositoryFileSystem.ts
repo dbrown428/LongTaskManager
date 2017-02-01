@@ -22,8 +22,8 @@ class DataRow {
 		readonly progressState: string | null, 
 		readonly progressCurrentStep: number | null, 
 		readonly progressMaximumSteps: number | null, 
-		readonly claimId: string | null) {
-	}
+		readonly claimId: string | null
+	) {}
 }
 
 export class LongTaskRepositoryFileSystem implements LongTaskRepository {
@@ -39,7 +39,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 
 	public add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		return new Promise((resolve, reject) => {
-			const identifier = this.newTaskIdentifier();
+			const identifier = this.newTaskIdentifier();	// Just for demo purposes.
 			const searchKeys = this.prepareSearchKeys(searchKey);
 			const progressState = null;
 			const progressCurrentStep = null;
@@ -66,7 +66,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 	}
 
 	private newTaskIdentifier(): LongTaskId {
-		// Just for demo purposes. Not meant to be a decent UUID implementation.
+		// Just for demo purposes in this file...
 		const timestamp = new Date().getTime();
 		const randomSequence = Math.random().toString(36).substring(4);
 		const identifier = new LongTaskId(timestamp + "_" + randomSequence);
@@ -137,6 +137,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 			// how can this conditional be better organized?
 			if (this.isClaimed(row)) {
 				const status = LongTaskStatus.Queued;
+				const claimId = null;
 				const updatedRow = new DataRow(
 					row.identifier,
 					row.ownerId,
@@ -147,7 +148,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 					row.progressState,
 					row.progressCurrentStep,
 					row.progressMaximumSteps,
-					null
+					claimId
 				);
 
 				// Change to file system...
@@ -210,6 +211,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 			if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
 				reject("You can only change a queued status to cancelled with an update.");
 			} else {
+				const claimHeartbeat = ClaimId.withNowTimestamp();
 				const updatedRow = new DataRow(
 					row.identifier,
 					row.ownerId,
@@ -220,7 +222,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 					progress.state,
 					progress.currentStep,
 					progress.maximumSteps,
-					row.claimId
+					claimHeartbeat.value
 				);
 
 				// Change to file system...
@@ -239,6 +241,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 				reject("The task was already cancelled.");
 			} else {
 				const status = LongTaskStatus.Cancelled;
+				const claimHeartbeat = ClaimId.withNowTimestamp();
 				const updatedRow = new DataRow(
 					row.identifier,
 					row.ownerId,
@@ -249,7 +252,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 					row.progressState,
 					row.progressCurrentStep,
 					row.progressMaximumSteps,
-					row.claimId
+					claimHeartbeat.value
 				);
 
 				this.table[index] = updatedRow;

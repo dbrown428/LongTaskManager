@@ -68,8 +68,8 @@ describe("Long task repository file system", () => {
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), "10"),
 			]).then((values: Array <LongTaskId>) => {
 				return Promise.all([
-					repository.claim(values[0], new ClaimId("4")),
-					repository.claim(values[1], new ClaimId("5")),
+					repository.claim(values[0], ClaimId.withNowTimestamp()),
+					repository.claim(values[1], ClaimId.withNowTimestamp()),
 				]);
 			}).then((values: Array <boolean>) => {
 				return repository.getNextTask();
@@ -90,7 +90,7 @@ describe("Long task repository file system", () => {
 			return Promise.resolve().then(() => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("5"), "3");
 			}).then((taskId: LongTaskId) => {
-				const claimId = new ClaimId("5");
+				const claimId = ClaimId.withNowTimestamp();
 				return repository.claim(taskId, claimId);
 			}).then((claimed: boolean) => {
 				assert.isTrue(claimed);
@@ -104,8 +104,8 @@ describe("Long task repository file system", () => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
 			}).then((taskId: LongTaskId) => {
 				return Promise.all([
-					repository.claim(taskId, new ClaimId("5")),
-					repository.claim(taskId, new ClaimId("8")),
+					repository.claim(taskId, ClaimId.withNowTimestamp()),
+					repository.claim(taskId, ClaimId.withNowTimestamp()),
 				]);
 			}).then((values: Array <boolean>) => {
 				assert.isTrue(values[0]);
@@ -120,7 +120,7 @@ describe("Long task repository file system", () => {
 				return repository.add("sweet-job", "{teacherId: 2, classroomId:8}", new UserId("3"), "happy");
 			}).then((taskId: LongTaskId) => {
 				return Promise.all([
-					repository.claim(taskId, new ClaimId("3")),
+					repository.claim(taskId, ClaimId.withNowTimestamp()),
 					repository.release(taskId),
 				]);
 			}).then((values: Array <boolean>) => {
@@ -156,7 +156,7 @@ describe("Long task repository file system", () => {
 				const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 4, 5);
 
 				return Promise.all([
-					repository.claim(taskId, new ClaimId("7")),
+					repository.claim(taskId, ClaimId.withNowTimestamp()),
 					repository.update(taskId, progress, status),
 				]);
 			}).then((values: Array <boolean>) => {
