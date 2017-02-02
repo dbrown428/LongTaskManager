@@ -2,9 +2,9 @@ import {assert} from "chai";
 import {Promise} from "es6-promise";
 import {Option} from "../../src/Option";
 import {UserId} from "../../src/UserId";
-import {ClaimId} from "../../src/ClaimId";
 import {LongTask} from "../../src/LongTask";
 import {LongTaskId} from "../../src/LongTaskId";
+import {LongTaskClaim} from "../../src/LongTaskClaim";
 import {LongTaskProgress} from "../../src/LongTaskProgress";
 import {LongTaskAttributes, LongTaskStatus} from "../../src/LongTaskAttributes";
 import {LongTaskRepositoryFileSystem} from "../../src/LongTaskRepositoryFileSystem";
@@ -68,8 +68,8 @@ describe("Long task repository file system", () => {
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), "10"),
 			]).then((values: Array <LongTaskId>) => {
 				return Promise.all([
-					repository.claim(values[0], ClaimId.withNowTimestamp()),
-					repository.claim(values[1], ClaimId.withNowTimestamp()),
+					repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
+					repository.claim(values[1], LongTaskClaim.withNowTimestamp()),
 				]);
 			}).then((values: Array <boolean>) => {
 				return repository.getNextTask();
@@ -90,7 +90,7 @@ describe("Long task repository file system", () => {
 			return Promise.resolve().then(() => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("5"), "3");
 			}).then((taskId: LongTaskId) => {
-				const claimId = ClaimId.withNowTimestamp();
+				const claimId = LongTaskClaim.withNowTimestamp();
 				return repository.claim(taskId, claimId);
 			}).then((claimed: boolean) => {
 				assert.isTrue(claimed);
@@ -104,8 +104,8 @@ describe("Long task repository file system", () => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
 			}).then((taskId: LongTaskId) => {
 				return Promise.all([
-					repository.claim(taskId, ClaimId.withNowTimestamp()),
-					repository.claim(taskId, ClaimId.withNowTimestamp()),
+					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
+					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
 				]);
 			}).then((values: Array <boolean>) => {
 				assert.isTrue(values[0]);
@@ -119,14 +119,49 @@ describe("Long task repository file system", () => {
 			return Promise.resolve().then(() => {
 				return repository.add("sweet-job", "{teacherId: 2, classroomId:8}", new UserId("3"), "happy");
 			}).then((taskId: LongTaskId) => {
+				const taskIds = [taskId];
+
 				return Promise.all([
-					repository.claim(taskId, ClaimId.withNowTimestamp()),
-					repository.release(taskId),
+					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
+					repository.release(taskIds),
 				]);
 			}).then((values: Array <boolean>) => {
 				return repository.getNextTask();
 			}).then((nextTask: Option <LongTask>) => {
 				assert.isTrue(nextTask.isDefined());
+			});
+		});
+
+		it("Should be able to release multiple claimed tasks.", () => {
+			const repository = new LongTaskRepositoryFileSystem;
+
+			return Promise.resolve().then(() => {
+				return Promise.all([
+					repository.add("great-job", "{teacherId: 9, classroomId:4}", new UserId("93"), "happy"),
+					repository.add("nice-job", "{teacherId: 2, classroomId:8}", new UserId("12"), "cool"),
+					repository.add("sweet-job", "{teacherId: 3, classroomId:2}", new UserId("32"), "3"),
+					repository.add("ok-job", "{teacherId: 7, classroomId:9}", new UserId("55"), "test"),
+				]);
+			}).then((values: Array <LongTaskId>) => {
+				const taskIds = [
+					values[1], 
+					values[2]
+				];
+
+				return Promise.all([
+					repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
+					repository.claim(values[1], LongTaskClaim.withNowTimestamp()),
+					repository.claim(values[2], LongTaskClaim.withNowTimestamp()),
+					repository.release(taskIds),
+				]);
+			}).then((values: Array <boolean>) => {
+				return repository.getNextTask();
+			}).then((nextTask: Option <LongTask>) => {
+				assert.isTrue(nextTask.isDefined());
+
+				if (nextTask.isDefined()) {
+					assert.equal(nextTask.get().attributes.type, "nice-job");
+				}
 			});
 		});
 	});
@@ -156,7 +191,7 @@ describe("Long task repository file system", () => {
 				const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 4, 5);
 
 				return Promise.all([
-					repository.claim(taskId, ClaimId.withNowTimestamp()),
+					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
 					repository.update(taskId, progress, status),
 				]);
 			}).then((values: Array <boolean>) => {

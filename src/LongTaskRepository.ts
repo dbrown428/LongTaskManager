@@ -1,10 +1,10 @@
 import {Option} from "./Option";
 import {UserId} from "./UserId";
-import {ClaimId} from "./ClaimId";
 import {Duration} from "./Duration";
 import {Promise} from 'es6-promise';
 import {LongTask} from "./LongTask";
 import {LongTaskId} from "./LongTaskId";
+import {LongTaskClaim} from "./LongTaskClaim";
 import {LongTaskStatus} from "./LongTaskAttributes";
 import {LongTaskProgress} from "./LongTaskProgress";
 
@@ -52,7 +52,7 @@ export interface LongTaskRepository {
 	 * @param  claimId	Expecting the claim identifier.
 	 * @return true if the claim was successful, false otherwise.
 	 */
-	claim(taskId: LongTaskId, claim: ClaimId): Promise <boolean>;
+	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean>;
 
 	/**
 	 * Release (unclaim) multiple tasks so they can be picked up for processing again.

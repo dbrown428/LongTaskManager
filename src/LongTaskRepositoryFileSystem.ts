@@ -1,9 +1,10 @@
 import {Option} from "./Option";
 import {UserId} from "./UserId";
-import {ClaimId} from "./ClaimId";
+import {Duration} from "./Duration";
 import {Promise} from 'es6-promise';
 import {LongTask} from "./LongTask";
 import {LongTaskId} from "./LongTaskId";
+import {LongTaskClaim} from "./LongTaskClaim";
 import {LongTaskProgress} from "./LongTaskProgress";
 import {LongTaskRepository} from "./LongTaskRepository";
 import {LongTaskAttributes, LongTaskStatus} from "./LongTaskAttributes";
@@ -22,7 +23,7 @@ class DataRow {
 		readonly progressState: string | null, 
 		readonly progressCurrentStep: number | null, 
 		readonly progressMaximumSteps: number | null, 
-		readonly claimId: string | null
+		readonly claimId: number | null
 	) {}
 }
 
@@ -82,20 +83,17 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 		}
 	}
 
-	public claim(taskId: LongTaskId, claimId: ClaimId): Promise <boolean> {
+	public claim(taskId: LongTaskId, claimId: LongTaskClaim): Promise <boolean> {
 		return new Promise((resolve, reject) => {
 			const index = this.indexForTaskId(taskId);
 
 			this.claimTaskAtIndex(index, claimId).then((claimed: boolean) => {
 				resolve(claimed);
-			}).catch((error) => {
-				// row does not exist.
-				resolve(false);
 			});
 		});
 	}
 
-	private claimTaskAtIndex(index: number, claimId: ClaimId): Promise <boolean> {
+	private claimTaskAtIndex(index: number, claimId: LongTaskClaim): Promise <boolean> {
 		return new Promise((resolve, reject) => {
 			// Change to file system...
 			const row: DataRow = this.table[index];
