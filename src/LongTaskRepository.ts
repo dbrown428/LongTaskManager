@@ -1,6 +1,7 @@
 import {Option} from "./Option";
 import {UserId} from "./UserId";
 import {ClaimId} from "./ClaimId";
+import {Duration} from "./Duration";
 import {Promise} from 'es6-promise';
 import {LongTask} from "./LongTask";
 import {LongTaskId} from "./LongTaskId";
@@ -25,6 +26,27 @@ export interface LongTaskRepository {
 	getNextTask(): Promise <Option <LongTask>>;
 
 	/**
+	 * Retrieve all processing tasks with a claim older than the specified duration.
+	 * @param  duration		A duration from now into the past.
+	 * @return a promise with zero or more tasks.
+	 */
+	getProcessingTasksWithClaimIdOlderThanDuration(duration: Duration): Promise <Array <LongTask>>;
+
+	/**
+	 * Retrieve tasks that match the search key.
+	 * @param  key		A search key to filter tasks with.
+	 * @return A promise with zero or more tasks.
+	 */
+	getTasksForSearchKey(key: string): Promise <Array <LongTask>>;
+
+	/**
+	 * Retrieve tasks that match the userId.
+	 * @param  identifier		A userId to filter tasks with.
+	 * @return A promise with 0 or more tasks.
+	 */
+	getTasksForUserId(identifier: UserId): Promise <Array <LongTask>>;
+
+	/**
 	 * Claim a task for processing.
 	 * @param  taskId   The task the system wants to claim.
 	 * @param  claimId	Expecting the claim identifier.
@@ -33,11 +55,11 @@ export interface LongTaskRepository {
 	claim(taskId: LongTaskId, claim: ClaimId): Promise <boolean>;
 
 	/**
-	 * Release (unclaim) a task so it can be picked up for processing by again.
-	 * @param  taskId	The task we want to release.
+	 * Release (unclaim) multiple tasks so they can be picked up for processing again.
+	 * @param  taskIds	The tasks we want to release.
 	 * @return The result of the release is returned when the promise is resolved.
 	 */
-	release(taskId: LongTaskId): Promise <boolean>;
+	release(taskIds: Array <LongTaskId>): Promise <boolean>;
 
 	/**
 	 * Update the task with progress and status changes.
@@ -61,18 +83,4 @@ export interface LongTaskRepository {
 	 * @return Promise with no resolved value (undefined)
 	 */
 	delete(taskId: LongTaskId): Promise <any>;
-
-	/**
-	 * Retrieve tasks that match the search key.
-	 * @param  key		A search key to filter tasks with.
-	 * @return A promise with 0 or more tasks.
-	 */
-	getTasksForSearchKey(key: string): Promise <Array <LongTask>>;
-
-	/**
-	 * Retrieve tasks that match the userId.
-	 * @param  identifier		A userId to filter tasks with.
-	 * @return A promise with 0 or more tasks.
-	 */
-	getTasksForUserId(identifier: UserId): Promise <Array <LongTask>>;
 }
