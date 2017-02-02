@@ -1,5 +1,5 @@
-import {UserId} from "./UserId";
 import {Promise} from 'es6-promise';
+import {UserId} from "./Values/UserId";
 import {LongTaskId} from "./LongTaskId";
 import {LongTaskType} from "./LongTaskType";
 import {LongTaskProgress} from "./LongTaskProgress";
