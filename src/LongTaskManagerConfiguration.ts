@@ -8,13 +8,12 @@ import {PublishSummaryReportsTaskProcessorConfiguration} from "./PublishSummaryR
 
 export class LongTaskManagerConfiguration {
 	static default(): LongTaskManager {
+		const logger = new ConsoleLogger;
 		const config = new LongTaskConfigurationDevelopment;
 		const repository = new LongTaskRepositoryFileSystem;
 		const longTaskProcessors = new LongTaskProcessorRegistration;
 		const backoff = BaseTwoExponentialBackoff.withMultiplierAndMaximum(100, 6400);
-
-		// Language feature dependencies: date, json serializer, json deserializer… these should probably be wrapped.
-		const manager = new LongTaskManagerImp(backoff, config, repository);
+		const manager = new LongTaskManagerImp(backoff, config, repository, logger);
 		
 		longTaskProcessors.registerInManager(manager);
 		return manager;
