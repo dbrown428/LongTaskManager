@@ -1,23 +1,23 @@
 {
-  "compileOnSave": true,
-  "compilerOptions": {
-    "module": "CommonJS",
-    "rootDirs": [
-      "src/",
-      "tests/"
+    "compileOnSave": true,
+    "compilerOptions": {
+        "target": "es6",
+        "module": "CommonJS",
+        "allowJs": true,
+        "strictNullChecks": true,
+        "alwaysStrict": true,
+        "rootDirs": [
+            "src/",
+            "tests/"
+        ],
+        "outDir": "build/"
+    },
+    "include": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
     ],
-    "allowJs": true,
-    "strictNullChecks": true,
-    "alwaysStrict": true,
-    "outDir": "build/",
-    "target": "es6"
-  },
-  "include": [
-    "src/**/*.ts",
-    "tests/**/*.ts"
-  ],
-  "exclude": [
-    "build",
-    "node_modules"
-  ]
+    "exclude": [
+        "build",
+        "node_modules"
+    ]
 }
