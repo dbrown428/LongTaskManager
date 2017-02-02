@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {BaseTwoExponentialBackoff} from "../../src/BaseTwoExponentialBackoff";
+import {BaseTwoExponentialBackoff} from "../../src/Backoff/BaseTwoExponentialBackoff";
 
 describe("Exponential backoff", () => {
 	describe("When initializing", () => {
