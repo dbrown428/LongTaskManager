@@ -1,7 +1,7 @@
 import {Promise} from 'es6-promise';
-import {UserId} from "./Values/UserId";
 import {LongTaskId} from "./LongTaskId";
 import {LongTaskType} from "./LongTaskType";
+import {UserId} from "../Shared/Values/UserId";
 import {LongTaskProgress} from "./LongTaskProgress";
 import {LongTaskProcessor} from "./LongTaskProcessor";
 import {LongTaskAttributes} from "./LongTaskAttributes";
@@ -10,10 +10,16 @@ import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
 
 export interface LongTaskManager {
 	/**
-	 * The task manager needs to know how to map task names to task processors.
+	 * The task manager needs to know how to map task types to task processors.
 	 * @param configuration		The long task processor configuration that should be used for processing certain tasks.
 	 */
 	registerTaskProcessor(configuration: LongTaskProcessorConfiguration);
+
+	/**
+	 * Need to be able to share the registered task processor types with other systems.
+	 * @return {Array <string>}
+	 */
+	getTaskProcessorKeys(): Array <string>;
 
 	/**
 	 * Start the system processing long tasks. The manager will continually retrieve tasks until it is shutdown.
@@ -28,7 +34,7 @@ export interface LongTaskManager {
 	 * @param  searchKey		Filter tasks based on this value.
 	 * @return the long task id when the promise is resolved.
 	 */
-	addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
+	addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: Array <string>): Promise <LongTaskId>;
 
 	/**
 	 * Update a task's progress.
@@ -36,7 +42,7 @@ export interface LongTaskManager {
 	 * @param  progress		The progress changes.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	update(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
+	updateTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
 
 	/**
 	 * Mark a task as completed.
@@ -44,34 +50,29 @@ export interface LongTaskManager {
 	 * @param  progress		The final progress changes.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	completed(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
+	completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
 	
 	/**
 	 * @param  taskId		The task that should be set as failed.
 	 * @param  progress		The final progress changes before the task failed.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	failed(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
+	failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
 
 	/**
 	 * Cancel a queued or processing task.
 	 * @param  taskId		The task that should be cancelled.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	cancel(taskId: LongTaskId): Promise <boolean>;
+	cancelTask(taskId: LongTaskId): Promise <boolean>;
 
 	/**
 	 * Delete a queued or processing task.
 	 * @param  taskId		The task that should be deleted.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	delete(taskId: LongTaskId): Promise <boolean>;
+	deleteTask(taskId: LongTaskId): Promise <boolean>;
 
-
-
-	// It feels like there are some violations happening here...
-	// These two methods could be nuked if we add an api layer…
-	// The api could directly access the repository layer, instead of going through the 
 	/**
 	 * Retrieve all tasks that match the search key(s).
 	 * @param  searchKey	A string or array of strings to filter

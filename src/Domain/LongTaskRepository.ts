@@ -1,10 +1,10 @@
-import {Option} from "./Option";
-import {Duration} from "./Duration";
 import {Promise} from 'es6-promise';
 import {LongTask} from "./LongTask";
-import {UserId} from "./Values/UserId";
 import {LongTaskId} from "./LongTaskId";
 import {LongTaskClaim} from "./LongTaskClaim";
+import {UserId} from "../Shared/Values/UserId";
+import {Option} from "../Shared/Values/Option";
+import {Duration} from "../Shared/Values/Duration";
 import {LongTaskStatus} from "./LongTaskAttributes";
 import {LongTaskProgress} from "./LongTaskProgress";
 

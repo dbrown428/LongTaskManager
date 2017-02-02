@@ -1,18 +1,18 @@
 import {assert} from "chai";
 import {Promise} from "es6-promise";
-import {Option} from "../../src/Option";
-import {UserId} from "../../src/UserId";
-import {LongTask} from "../../src/LongTask";
-import {LongTaskId} from "../../src/LongTaskId";
-import {LongTaskClaim} from "../../src/LongTaskClaim";
-import {LongTaskProgress} from "../../src/LongTaskProgress";
-import {LongTaskAttributes, LongTaskStatus} from "../../src/LongTaskAttributes";
-import {LongTaskRepositoryFileSystem} from "../../src/LongTaskRepositoryFileSystem";
+import {Option} from "../../../../src/Shared/Values/Option";
+import {UserId} from "../../../../src/Shared/Values/UserId";
+import {LongTask} from "../../../../src/Domain/LongTask";
+import {LongTaskId} from "../../../../src/Domain/LongTaskId";
+import {LongTaskClaim} from "../../../../src/Domain/LongTaskClaim";
+import {LongTaskProgress} from "../../../../src/Domain/LongTaskProgress";
+import {LongTaskAttributes, LongTaskStatus} from "../../../../src/Domain/LongTaskAttributes";
+import {LongTaskRepositoryArray} from "../../../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
 
-describe("Long task repository file system", () => {
+describe("Long task repository array implementation", () => {
 	describe("Add Task", () => {
 		it("Should add task attributes to the list.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 			const type = "awesome-job";
 			const ownerId = new UserId("4");
 			const searchKey = "8";
@@ -30,7 +30,7 @@ describe("Long task repository file system", () => {
 
 	describe("Next Task", () => {
 		it("Should return an empty option when there is no next task.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.getNextTask();
@@ -40,7 +40,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should return the first of many queued tasks.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 			const ownerId = new UserId("6");
 
 			return Promise.all([
@@ -59,7 +59,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should return the first queued task.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
@@ -85,7 +85,7 @@ describe("Long task repository file system", () => {
 
 	describe("Claim a Task", () => {
 		it("Should be able to claim an unclaimed task.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("5"), "3");
@@ -98,7 +98,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should not be able to claim an already claimed task.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
@@ -114,7 +114,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should be able to release a claimed task.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.add("sweet-job", "{teacherId: 2, classroomId:8}", new UserId("3"), "happy");
@@ -133,7 +133,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should be able to release multiple claimed tasks.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return Promise.all([
@@ -168,7 +168,7 @@ describe("Long task repository file system", () => {
 
 	describe("Update", () => {
 		it("Should not allow status change from queued to processing, failed, or completed.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
@@ -182,7 +182,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should update the progress of a task.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
@@ -202,7 +202,7 @@ describe("Long task repository file system", () => {
 	
 	describe("Cancel", () => {
 		it("Should cancel the specified task.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
@@ -216,7 +216,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should throw an error if the specified task is already cancelled.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
 				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
@@ -233,7 +233,7 @@ describe("Long task repository file system", () => {
 
 	describe("Delete a task", () => {
 		it("Should delete a task from the table.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
@@ -253,7 +253,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should throw an error when trying to delete a task that doesn't exist in the table.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
@@ -272,7 +272,7 @@ describe("Long task repository file system", () => {
 	
 	describe("Tasks with Search Key", () => {
 		it("Should return an empty array when no tasks have the specified search key.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
@@ -287,7 +287,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should return an array of tasks when tasks have the specified search key.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 			const key = "hello";
 
 			return Promise.all([
@@ -305,7 +305,7 @@ describe("Long task repository file system", () => {
 
 	describe("Tasks with UserId", () => {
 		it("Should return an empty array when no tasks were created with the specified user id.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
@@ -320,7 +320,7 @@ describe("Long task repository file system", () => {
 		});
 
 		it("Should return an array of tasks when, one or more, tasks were created by the specified user id.", () => {
-			const repository = new LongTaskRepositoryFileSystem;
+			const repository = new LongTaskRepositoryArray;
 			const userId = new UserId("456");
 
 			return Promise.all([
@@ -333,6 +333,15 @@ describe("Long task repository file system", () => {
 			}).then((tasks: Array <LongTask>) => {
 				assert.lengthOf(tasks, 2);
 			});
+		});
+	});
+
+	describe("Tasks older than duration", () => {
+		it("Should retrieve processing tasks that have a expired.", () => {
+			// create a bunch of tasks... with varying times.
+			// no way to do this with ARRAY... FS?
+
+			assert.isTrue(false);
 		});
 	});
 });

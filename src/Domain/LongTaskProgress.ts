@@ -4,7 +4,7 @@ export class LongTaskProgress {
 	}
 
 	private constructor(
-		readonly state: string | null, 	// this should be an array of any.
+		readonly state: string | null,
 		readonly currentStep: number | null, 
 		readonly maximumSteps: number | null
 	) {}

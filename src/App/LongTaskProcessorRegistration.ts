@@ -9,6 +9,8 @@ export class LongTaskProcessorRegistration {
 	 */
 	public registerInManager(manager: LongTaskManager): void {
 
+		// How do we register across the API boundary? lose type safety. How do you share the available types?
+
 		// ==============================
 		// Task processors go here.
 		// ==============================

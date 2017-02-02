@@ -1,10 +1,11 @@
 import {Backoff} from "./Backoff";
+import {Duration} from "../Values/Duration";
 
 export class BaseTwoExponentialBackoff implements Backoff {
 	private exponent: number;
 
-	public static withMultiplierAndMaximum(base: number, maximum: number): Backoff {
-		return new BaseTwoExponentialBackoff(base, maximum);
+	public static withMultiplierAndMaximum(base: Duration, maximum: Duration): Backoff {
+		return new BaseTwoExponentialBackoff(base.inMilliseconds(), maximum.inMilliseconds());
 	}
 
 	private constructor(private multiplier: number, private maximum: number) {
@@ -20,8 +21,8 @@ export class BaseTwoExponentialBackoff implements Backoff {
 		}
 	}
 
-	public static withMultiplier(base: number): Backoff {
-		return new BaseTwoExponentialBackoff(base, 0);
+	public static withMultiplier(base: Duration): Backoff {
+		return new BaseTwoExponentialBackoff(base.inMilliseconds(), 0);
 	}
 
 	public delay(): number {

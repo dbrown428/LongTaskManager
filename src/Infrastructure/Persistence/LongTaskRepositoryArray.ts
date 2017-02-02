@@ -1,15 +1,13 @@
-import {Option} from "./Option";
-import {Duration} from "./Duration";
 import {Promise} from 'es6-promise';
-import {LongTask} from "./LongTask";
-import {UserId} from "./Values/UserId";
-import {LongTaskId} from "./LongTaskId";
-import {LongTaskClaim} from "./LongTaskClaim";
-import {LongTaskProgress} from "./LongTaskProgress";
-import {LongTaskRepository} from "./LongTaskRepository";
-import {LongTaskAttributes, LongTaskStatus} from "./LongTaskAttributes";
-
-// require("fs") TODO
+import {LongTask} from "../../Domain/LongTask";
+import {Option} from "../../Shared/Values/Option";
+import {UserId} from "../../Shared/Values/UserId";
+import {LongTaskId} from "../../Domain/LongTaskId";
+import {Duration} from "../../Shared/Values/Duration";
+import {LongTaskClaim} from "../../Domain/LongTaskClaim";
+import {LongTaskProgress} from "../../Domain/LongTaskProgress";
+import {LongTaskRepository} from "../../Domain/LongTaskRepository";
+import {LongTaskAttributes, LongTaskStatus} from "../../Domain/LongTaskAttributes";
 
 // Used to represent an entry in the table.
 class DataRow {
@@ -27,20 +25,18 @@ class DataRow {
 	) {}
 }
 
-export class LongTaskRepositoryFileSystem implements LongTaskRepository {
-	// Change to file system...
+export class LongTaskRepositoryArray implements LongTaskRepository {
 	table: Array <DataRow>;
 	index: Array <string>;
 
 	constructor() {
-		// Change to file system...
 		this.table = [];
 		this.index = [];
 	}
 
 	public add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		return new Promise((resolve, reject) => {
-			const identifier = this.newTaskIdentifier();	// Just for demo purposes.
+			const identifier = this.newTaskIdentifier();
 			const searchKeys = this.prepareSearchKeys(searchKey);
 			const progressState = null;
 			const progressCurrentStep = null;
@@ -59,7 +55,6 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 				claimId
 			);
 
-			// Change to file system...
 			this.table.push(row);
 			this.index.push(identifier.value);
 			resolve(identifier);
@@ -95,7 +90,6 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 
 	private claimTaskAtIndex(index: number, claimId: LongTaskClaim): Promise <boolean> {
 		return new Promise((resolve, reject) => {
-			// Change to file system...
 			const row: DataRow = this.table[index];
 
 			// how can this conditional be better organized?
@@ -127,34 +121,46 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 		return (row.claimId != null);
 	}
 
-	public release(taskId: LongTaskId): Promise <boolean> {
+	public release(taskIds: Array <LongTaskId>): Promise <boolean> {
 		return new Promise((resolve, reject) => {
-			const index = this.indexForTaskId(taskId);
-			const row: DataRow = this.table[index];
 
-			// how can this conditional be better organized?
-			if (this.isClaimed(row)) {
-				const status = LongTaskStatus.Queued;
-				const claimId = null;
-				const updatedRow = new DataRow(
-					row.identifier,
-					row.ownerId,
-					row.searchKey,
-					row.type,
-					row.params,
-					status,
-					row.progressState,
-					row.progressCurrentStep,
-					row.progressMaximumSteps,
-					claimId
-				);
+			// serial?
 
-				// Change to file system...
-				this.table[index] = updatedRow;
-				resolve(true);
-			} else {
-				resolve(false);
+			for (let taskId of taskIds) {
+				const index = this.indexForTaskId(taskId);
+				const row: DataRow = this.table[index];
+
+				// how can this conditional be better organized?
+				if (this.isClaimed(row)) {
+					const status = LongTaskStatus.Queued;
+					const claimId = null;
+					const updatedRow = new DataRow(
+						row.identifier,
+						row.ownerId,
+						row.searchKey,
+						row.type,
+						row.params,
+						status,
+						row.progressState,
+						row.progressCurrentStep,
+						row.progressMaximumSteps,
+						claimId
+					);
+
+					this.table[index] = updatedRow;
+					// resolve(true);
+				} else {
+					// resolve(false);
+				}
+
+				// TODO
 			}
+		});
+	}
+
+	private releaseTask(taskId: LongTaskId): Promise <boolean> {
+		return new Promise((resolve, reject) => {
+			// todo
 		});
 	}
 
@@ -164,8 +170,6 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 	
 	public getNextTask(): Promise <Option <LongTask>> {
 		return new Promise((resolve, reject) => {
-			
-			// Change to file system...
 			for (let row of this.table) {
 				if (row.status == LongTaskStatus.Queued) {
 					const task = this.hydrateTaskFrom(row);
@@ -196,11 +200,30 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 		return task;
 	}
 
-	update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean> {
+	public getProcessingTasksWithClaimIdOlderThanDuration(duration: Duration): Promise <Array <LongTask>> {
+		return new Promise((resolve, reject) => {
+			var tasks: Array <LongTask> = [];
+			
+			for (let row of this.table) {
+				const now = Date.now();
+				const age = now - row.claimId;
+
+				const expired = (age > duration.inMilliseconds());
+				const processing = (row.status == LongTaskStatus.Processing);
+
+				if (processing && expired) {
+					const task = this.hydrateTaskFrom(row);
+					tasks.push(task);
+				}
+			}
+
+			resolve(tasks);
+		});
+	}
+
+	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean> {
 		return new Promise((resolve, reject) => {
 			const index = this.indexForTaskId(taskId);
-
-			// Change to file system...
 			const row = this.table[index];
 			
 			// Should this logic be in the repository or the layer above? How smart should the repository be?
@@ -209,7 +232,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 			if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
 				reject("You can only change a queued status to cancelled with an update.");
 			} else {
-				const claimHeartbeat = ClaimId.withNowTimestamp();
+				const claimHeartbeat = LongTaskClaim.withNowTimestamp();
 				const updatedRow = new DataRow(
 					row.identifier,
 					row.ownerId,
@@ -223,14 +246,13 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 					claimHeartbeat.value
 				);
 
-				// Change to file system...
 				this.table[index] = updatedRow;
 				resolve(true);
 			}
 		});
 	}
 
-	cancel(taskId: LongTaskId): Promise <any> {
+	public cancel(taskId: LongTaskId): Promise <any> {
 		return new Promise((resolve, reject) => {
 			const index = this.indexForTaskId(taskId);
 			const row = this.table[index];
@@ -239,7 +261,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 				reject("The task was already cancelled.");
 			} else {
 				const status = LongTaskStatus.Cancelled;
-				const claimHeartbeat = ClaimId.withNowTimestamp();
+				const claimHeartbeat = LongTaskClaim.withNowTimestamp();
 				const updatedRow = new DataRow(
 					row.identifier,
 					row.ownerId,
@@ -259,7 +281,7 @@ export class LongTaskRepositoryFileSystem implements LongTaskRepository {
 		});
 	}
 
-	delete(taskId: LongTaskId): Promise <any> {
+	public delete(taskId: LongTaskId): Promise <any> {
 		return new Promise((resolve, reject) => {
 			const index = this.indexForTaskId(taskId);
 

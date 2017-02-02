@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {SpyLogger} from "../../src/SpyLogger";
+import {SpyLogger} from "../../../../src/Shared/Log/SpyLogger";
 
 describe("Spy Logger", () => {
 	it("Should count info calls.", () => {

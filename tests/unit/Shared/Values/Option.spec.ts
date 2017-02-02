@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {Option} from "../../src/Values/Option";
+import {Option} from "../../../../src/Shared/Values/Option";
 
 describe("Generic Option", () => {
 	it("Should be instantiated with some value of a specific type.", () => {
