@@ -1,5 +1,7 @@
+import {Duration} from "./Duration";
+
 export interface LongTaskConfiguration {
+	cleanupDelay: Duration;
 	maximumConcurrency: number;
-	cleanupDelayInSeconds: number;
-	maximumProcessingTimeInSeconds: number;
+	maximumProcessingTime: Duration;
 }
