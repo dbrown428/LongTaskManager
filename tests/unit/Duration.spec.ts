@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {Duration} from "../../src/Duration";
+import {Duration} from "../../src/Values/Duration";
 
 describe("Duration", () => {
 	it("Should instantiate with seconds.", () => {
