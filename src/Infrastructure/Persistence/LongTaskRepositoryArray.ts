@@ -110,7 +110,6 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 					claimId.value
 				);
 
-				// Change to file system...
 				this.table[index] = updatedRow;
 				resolve(true);
 			}
@@ -121,46 +120,33 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		return (row.claimId != null);
 	}
 
-	public release(taskIds: Array <LongTaskId>): Promise <boolean> {
+	public release(taskId: LongTaskId): Promise <boolean> {
 		return new Promise((resolve, reject) => {
+			const index = this.indexForTaskId(taskId);
+			const row: DataRow = this.table[index];
 
-			// serial?
+			// how can this conditional be better organized?
+			if (this.isClaimed(row)) {
+				const status = LongTaskStatus.Queued;
+				const claimId = null;
+				const updatedRow = new DataRow(
+					row.identifier,
+					row.ownerId,
+					row.searchKey,
+					row.type,
+					row.params,
+					status,
+					row.progressState,
+					row.progressCurrentStep,
+					row.progressMaximumSteps,
+					claimId
+				);
 
-			for (let taskId of taskIds) {
-				const index = this.indexForTaskId(taskId);
-				const row: DataRow = this.table[index];
-
-				// how can this conditional be better organized?
-				if (this.isClaimed(row)) {
-					const status = LongTaskStatus.Queued;
-					const claimId = null;
-					const updatedRow = new DataRow(
-						row.identifier,
-						row.ownerId,
-						row.searchKey,
-						row.type,
-						row.params,
-						status,
-						row.progressState,
-						row.progressCurrentStep,
-						row.progressMaximumSteps,
-						claimId
-					);
-
-					this.table[index] = updatedRow;
-					// resolve(true);
-				} else {
-					// resolve(false);
-				}
-
-				// TODO
+				this.table[index] = updatedRow;
+				resolve(true);
+			} else {
+				resolve(false);
 			}
-		});
-	}
-
-	private releaseTask(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			// todo
 		});
 	}
 
@@ -200,20 +186,20 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		return task;
 	}
 
-	public getProcessingTasksWithClaimIdOlderThanDuration(duration: Duration): Promise <Array <LongTask>> {
+	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>> {
 		return new Promise((resolve, reject) => {
 			var tasks: Array <LongTask> = [];
-			
+
 			for (let row of this.table) {
-				const now = Date.now();
-				const age = now - row.claimId;
+				if (row.claimId) {
+					const age = date.valueOf() - row.claimId;
+					const expired = (age > duration.inMilliseconds());
+					const processing = (row.status == LongTaskStatus.Processing);
 
-				const expired = (age > duration.inMilliseconds());
-				const processing = (row.status == LongTaskStatus.Processing);
-
-				if (processing && expired) {
-					const task = this.hydrateTaskFrom(row);
-					tasks.push(task);
+					if (processing && expired) {
+						const task = this.hydrateTaskFrom(row);
+						tasks.push(task);
+					}
 				}
 			}
 

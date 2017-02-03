@@ -18,6 +18,10 @@ export class PublishSummaryReportsTaskProcessor implements LongTaskProcessor {
 		// calculate the maximum steps.
 		// current step = 0;
 
+		// Or subscribe to cancel/delete events
+		// regularly pull the task status from the table.
+		// the manager may have cancelled the process.
+		// If cancelled... we should stop working and terminate.
 
 		// completed the first batch... say 10 steps of 100 completed
 		// Send a progress report to the task manager

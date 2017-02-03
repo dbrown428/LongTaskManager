@@ -1,9 +1,10 @@
 import {assert} from "chai";
 import {Promise} from "es6-promise";
+import {LongTask} from "../../../../src/Domain/LongTask";
 import {Option} from "../../../../src/Shared/Values/Option";
 import {UserId} from "../../../../src/Shared/Values/UserId";
-import {LongTask} from "../../../../src/Domain/LongTask";
 import {LongTaskId} from "../../../../src/Domain/LongTaskId";
+import {Duration} from "../../../../src/Shared/Values/Duration";
 import {LongTaskClaim} from "../../../../src/Domain/LongTaskClaim";
 import {LongTaskProgress} from "../../../../src/Domain/LongTaskProgress";
 import {LongTaskAttributes, LongTaskStatus} from "../../../../src/Domain/LongTaskAttributes";
@@ -119,55 +120,42 @@ describe("Long task repository array implementation", () => {
 			return Promise.resolve().then(() => {
 				return repository.add("sweet-job", "{teacherId: 2, classroomId:8}", new UserId("3"), "happy");
 			}).then((taskId: LongTaskId) => {
-				const taskIds = [taskId];
-
 				return Promise.all([
 					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
-					repository.release(taskIds),
+					repository.release(taskId),
 				]);
 			}).then((values: Array <boolean>) => {
 				return repository.getNextTask();
 			}).then((nextTask: Option <LongTask>) => {
 				assert.isTrue(nextTask.isDefined());
-			});
-		});
-
-		it("Should be able to release multiple claimed tasks.", () => {
-			const repository = new LongTaskRepositoryArray;
-
-			return Promise.resolve().then(() => {
-				return Promise.all([
-					repository.add("great-job", "{teacherId: 9, classroomId:4}", new UserId("93"), "happy"),
-					repository.add("nice-job", "{teacherId: 2, classroomId:8}", new UserId("12"), "cool"),
-					repository.add("sweet-job", "{teacherId: 3, classroomId:2}", new UserId("32"), "3"),
-					repository.add("ok-job", "{teacherId: 7, classroomId:9}", new UserId("55"), "test"),
-				]);
-			}).then((values: Array <LongTaskId>) => {
-				const taskIds = [
-					values[1], 
-					values[2]
-				];
-
-				return Promise.all([
-					repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
-					repository.claim(values[1], LongTaskClaim.withNowTimestamp()),
-					repository.claim(values[2], LongTaskClaim.withNowTimestamp()),
-					repository.release(taskIds),
-				]);
-			}).then((values: Array <boolean>) => {
-				return repository.getNextTask();
-			}).then((nextTask: Option <LongTask>) => {
-				assert.isTrue(nextTask.isDefined());
-
-				if (nextTask.isDefined()) {
-					assert.equal(nextTask.get().attributes.type, "nice-job");
-				}
 			});
 		});
 	});
 
-	describe("Update", () => {
-		it("Should not allow status change from queued to processing, failed, or completed.", () => {
+	describe("Update Task", () => {
+		it("Should result in an error if a cancelled task is updated.", () => {
+			const repository = new LongTaskRepositoryArray;
+
+			return Promise.resolve().then(() => {
+				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
+			}).then((taskId: LongTaskId) => {
+				return repository.cancelled(taskId);
+				// repository.update(taskId, progress);
+			}).then()
+		});
+
+		it("Should result in an error if a cancelled task is set to completed.");
+
+		it("Should result in an error if a failed task is updated.", () => {
+			// it("Should result in an error if a failed task is set as completed.");
+		});
+		
+		it("Should result in an error if a completed task is updated in any way.", () => {
+			// it("Should result in an error if a completed task is updated to failed.");
+			// it("Should result in an error if a completed task is set as completed again.");
+		});
+
+		it("Should result in an error if a queued task is updated in any way.", () => {
 			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
@@ -200,8 +188,8 @@ describe("Long task repository array implementation", () => {
 		});
 	});
 	
-	describe("Cancel", () => {
-		it("Should cancel the specified task.", () => {
+	describe("Cancel Task", () => {
+		it("Should cancel a queued task.", () => {
 			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
@@ -215,7 +203,12 @@ describe("Long task repository array implementation", () => {
 			});
 		});
 
-		it("Should throw an error if the specified task is already cancelled.", () => {
+		it("Should cancel a processing task.");
+		it("Should result in an error if the task does not exist.");
+		it("Should result in an error if the task is finished.");
+		it("Should result in an error if the task is completed.");
+
+		it("Should result in an error if the specified task is already cancelled.", () => {
 			const repository = new LongTaskRepositoryArray;
 
 			return Promise.resolve().then(() => {
@@ -231,8 +224,8 @@ describe("Long task repository array implementation", () => {
 		});
 	});
 
-	describe("Delete a task", () => {
-		it("Should delete a task from the table.", () => {
+	describe("Delete task", () => {
+		it("Should delete a task regardless of it's status.", () => {
 			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
@@ -252,7 +245,7 @@ describe("Long task repository array implementation", () => {
 			});
 		});
 
-		it("Should throw an error when trying to delete a task that doesn't exist in the table.", () => {
+		it("Should result in an error when trying to delete a task that doesn't exist.", () => {
 			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
@@ -320,8 +313,8 @@ describe("Long task repository array implementation", () => {
 		});
 
 		it("Should return an array of tasks when, one or more, tasks were created by the specified user id.", () => {
-			const repository = new LongTaskRepositoryArray;
 			const userId = new UserId("456");
+			const repository = new LongTaskRepositoryArray;
 
 			return Promise.all([
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
@@ -338,10 +331,30 @@ describe("Long task repository array implementation", () => {
 
 	describe("Tasks older than duration", () => {
 		it("Should retrieve processing tasks that have a expired.", () => {
-			// create a bunch of tasks... with varying times.
-			// no way to do this with ARRAY... FS?
+			const userId = new UserId("456");
+			const repository = new LongTaskRepositoryArray;
 
-			assert.isTrue(false);
+			return Promise.all([
+				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
+				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", userId, "3"),
+				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
+				repository.add("sweet-job", "{students:[9,10], teacher: 7}", userId, "10"),
+			]).then((taskIds: Array <LongTaskId>) => {
+				const oldDate = Date.now() - 4000;
+
+				return Promise.all([
+					repository.claim(taskIds[0], LongTaskClaim.withNowTimestamp()),
+					repository.claim(taskIds[1], LongTaskClaim.withExistingTimestamp(oldDate)),
+					repository.claim(taskIds[2], LongTaskClaim.withNowTimestamp()),
+				]);
+			}).then((claimed: Array <boolean>) => {
+				const duration = Duration.withSeconds(2);
+				const date = new Date();
+				return repository.getProcessingTasksWithClaimOlderThanDurationFromDate(duration, date);
+			}).then((tasks: Array <LongTask>) => {
+				assert.lengthOf(tasks, 1);
+				assert.equal(tasks[0].attributes.type, "fabulous-job");
+			});
 		});
 	});
 });

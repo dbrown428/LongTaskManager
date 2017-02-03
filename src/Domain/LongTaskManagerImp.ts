@@ -9,6 +9,7 @@ import {Backoff} from "../Shared/Backoff/Backoff";
 import {LongTaskManager} from "./LongTaskManager";
 import {LongTaskSettings} from "./LongTaskSettings";
 import {LongTaskStatus} from "./LongTaskAttributes";
+import {LongTaskProgress} from "./LongTaskProgress";
 import {LongTaskProcessor} from "./LongTaskProcessor";
 import {LongTaskRepository} from "./LongTaskRepository";
 import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
@@ -31,17 +32,17 @@ export class LongTaskManagerImp implements LongTaskManager {
 		this.started = false;
 	}
 
-	registerTaskProcessor(configuration: LongTaskProcessorConfiguration): void {
+	public registerTaskProcessor(configuration: LongTaskProcessorConfiguration): void {
 		const key: string = configuration.key().type;
 		const processor: LongTaskProcessor = configuration.default();
 		this.taskProcessors[key] = processor;
 	}
 
-	getTaskProcessorKeys(): Array <string> {
+	public getTaskProcessorKeys(): Array <string> {
 		return Object.keys(this.taskProcessors);
 	}
 
-	start(): void {
+	public start(): void {
 		if (this.started) {
 			this.logger.warn("An attempt was made to start an already running long task system.");
 		} else {
@@ -159,9 +160,15 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	public updateTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean> {
 		return new Promise((resolve, reject) => {
-
-			// TODO
-			resolve(false);
+			// just a forwarding call... nothing to test. hmmm...
+			repository.update(taskId, progress).then((updated: boolean) => {
+				if (updated) {
+					// ?
+					resolve(true)
+				} else {
+					resolve(false);
+				}
+			});
 		});
 	}
 
@@ -194,7 +201,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	public failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean> {
 		return new Promise((resolve, reject) => {
-			
+			// remove from processing.
+			// log
 			// TODO
 			resolve(false);
 		});
@@ -203,6 +211,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 	public cancelTask(taskId: LongTaskId): Promise <boolean> {
 		return new Promise((resolve, reject) => {
 
+			// if it's processing... remove it
 			// TODO
 			resolve(false);
 		});
@@ -210,7 +219,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	public deleteTask(taskId: LongTaskId): Promise <boolean> {
 		return new Promise((resolve, reject) => {
-
+			// if it's processing... remove it
 			// TODO
 			resolve(false);
 		});

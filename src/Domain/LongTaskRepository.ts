@@ -28,9 +28,10 @@ export interface LongTaskRepository {
 	/**
 	 * Retrieve all processing tasks with a claim older than the specified duration.
 	 * @param  duration		A duration from now into the past.
+	 * @param  date			The reference date-time.
 	 * @return a promise with zero or more tasks.
 	 */
-	getProcessingTasksWithClaimIdOlderThanDuration(duration: Duration): Promise <Array <LongTask>>;
+	getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>>;
 
 	/**
 	 * Retrieve tasks that match the search key.
@@ -55,11 +56,11 @@ export interface LongTaskRepository {
 	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean>;
 
 	/**
-	 * Release (unclaim) multiple tasks so they can be picked up for processing again.
-	 * @param  taskIds	The tasks we want to release.
+	 * Release (unclaim) a task so it can be picked up for processing again.
+	 * @param  taskId	The task to be released.
 	 * @return The result of the release is returned when the promise is resolved.
 	 */
-	release(taskIds: Array <LongTaskId>): Promise <boolean>;
+	release(taskId: LongTaskId): Promise <boolean>;
 
 	/**
 	 * Update the task with progress and status changes.
