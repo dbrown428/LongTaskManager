@@ -9,7 +9,12 @@ import {LongTaskRepository} from "./LongTaskRepository";
 import {LongTaskAttributes, LongTaskStatus} from "./LongTaskAttributes";
 
 export class LongTaskRepositoryMongo implements LongTaskRepository {
+	constructor(readonly db: MongoClient) {}
+
 	add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+
+		// db.collection().insertOne({}, () => {});
+
 		return new Promise((resolve, reject) => {
 
 			// TEMP

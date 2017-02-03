@@ -173,22 +173,24 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	public completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean> {
-		return new Promise((resolve, reject) => {
+		
 			const status = LongTaskStatus.Completed;
 
-			this.repository.update(taskId, progress, status).then((successful: boolean) => {
+			return this.repository.update(taskId, progress, status).then((successful: boolean) => {
 				if (successful) {
 					this.removeFromProcessing(taskId);
-					resolve(true);
+					return true;
 				} else {
-					resolve(false);
+					return false;
 				}
-			}).catch((error) => {
-				// log error.
-				// or should this bubble up to the next layer?
-				resolve(false);
 			});
-		});
+
+			// .catch((error) => {
+			// 	// log error.
+			// 	// or should this bubble up to the next layer?
+			// 	resolve(false);
+			// });
+		
 	}
 
 	private removeFromProcessing(taskId: LongTaskId): void {

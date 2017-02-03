@@ -21,6 +21,9 @@ export interface LongTaskManager {
 	 */
 	getTaskProcessorKeys(): Array <string>;
 
+	// validate the api type/keys against this list.
+	// make sure values coming in.
+
 	/**
 	 * Start the system processing long tasks. The manager will continually retrieve tasks until it is shutdown.
 	 */

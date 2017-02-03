@@ -141,7 +141,9 @@ describe("Long task repository array implementation", () => {
 			}).then((taskId: LongTaskId) => {
 				return repository.cancelled(taskId);
 				// repository.update(taskId, progress);
-			}).then()
+			}).then(
+			// TODO
+			);
 		});
 
 		it("Should result in an error if a cancelled task is set to completed.");
