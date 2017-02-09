@@ -10,7 +10,7 @@ import {LongTaskProgress} from "../../../../src/Domain/LongTaskProgress";
 import {LongTaskAttributes, LongTaskStatus} from "../../../../src/Domain/LongTaskAttributes";
 import {LongTaskRepositoryArray} from "../../../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
 
-describe("Long task repository array implementation", () => {
+describe.only("Long task repository array implementation", () => {
 	describe("Add Task", () => {
 		it("Should add task attributes to the list.", () => {
 			const repository = new LongTaskRepositoryArray;
@@ -19,13 +19,13 @@ describe("Long task repository array implementation", () => {
 			const searchKey = "8";
 			const params = "{students:[1,2,3,4], reportId:5}";
 
-			return Promise.resolve().then(() => {
-				return repository.add(type, params, ownerId, searchKey);
-			}).then(() => {
-				return repository.getNextTask();
-			}).then((nextTask: Option <LongTask>) => {
-				assert.isTrue(nextTask.isDefined());
-			});
+			return repository.add(type, params, ownerId, searchKey)
+				.then((taskId: LongTaskId) => {
+					return repository.getNextTask();
+				})
+				.then((nextTask: Option <LongTask>) => {
+					assert.isTrue(nextTask.isDefined());
+				});
 		});
 	});
 
@@ -33,11 +33,10 @@ describe("Long task repository array implementation", () => {
 		it("Should return an empty option when there is no next task.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.getNextTask();
-			}).then((nextTask: Option <LongTask>) => {
-				assert.isTrue(nextTask.isEmpty());
-			});
+			return repository.getNextTask()
+				.then((nextTask: Option <LongTask>) => {
+					assert.isTrue(nextTask.isEmpty());
+				});
 		});
 
 		it("Should return the first of many queued tasks.", () => {
@@ -48,9 +47,11 @@ describe("Long task repository array implementation", () => {
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", ownerId, "9"),
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", ownerId, "1"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", ownerId, "2"),
-			]).then(() => {
+			])
+			.then((values: Array <LongTaskId>) => {
 				return repository.getNextTask();
-			}).then((nextTask: Option <LongTask>) => {
+			})
+			.then((nextTask: Option <LongTask>) => {
 				assert.isTrue(nextTask.isDefined());
 
 				if(nextTask.isDefined()) {
@@ -67,14 +68,17 @@ describe("Long task repository array implementation", () => {
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", new UserId("1"), "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), "10"),
-			]).then((values: Array <LongTaskId>) => {
+			])
+			.then((values: Array <LongTaskId>) => {
 				return Promise.all([
 					repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
 					repository.claim(values[1], LongTaskClaim.withNowTimestamp()),
 				]);
-			}).then((values: Array <boolean>) => {
+			})
+			.then((values: Array <boolean>) => {
 				return repository.getNextTask();
-			}).then((nextTask: Option <LongTask>) => {
+			})
+			.then((nextTask: Option <LongTask>) => {
 				assert.isTrue(nextTask.isDefined());
 
 				if (nextTask.isDefined()) {
@@ -88,47 +92,48 @@ describe("Long task repository array implementation", () => {
 		it("Should be able to claim an unclaimed task.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("5"), "3");
-			}).then((taskId: LongTaskId) => {
-				const claimId = LongTaskClaim.withNowTimestamp();
-				return repository.claim(taskId, claimId);
-			}).then((claimed: boolean) => {
-				assert.isTrue(claimed);
-			});
+			return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("5"), "3")
+				.then((taskId: LongTaskId) => {
+					const claimId = LongTaskClaim.withNowTimestamp();
+					return repository.claim(taskId, claimId);
+				})
+				.then((claimed: boolean) => {
+					assert.isTrue(claimed);
+				});
 		});
 
 		it("Should not be able to claim an already claimed task.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
-			}).then((taskId: LongTaskId) => {
-				return Promise.all([
-					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
-					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
-				]);
-			}).then((values: Array <boolean>) => {
-				assert.isTrue(values[0]);
-				assert.isFalse(values[1]);
-			});
+			return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9")
+				.then((taskId: LongTaskId) => {
+					return Promise.all([
+						repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
+						repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
+					]);
+				})
+				.then((values: Array <boolean>) => {
+					assert.isTrue(values[0]);
+					assert.isFalse(values[1]);
+				});
 		});
 
 		it("Should be able to release a claimed task.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("sweet-job", "{teacherId: 2, classroomId:8}", new UserId("3"), "happy");
-			}).then((taskId: LongTaskId) => {
-				return Promise.all([
-					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
-					repository.release(taskId),
-				]);
-			}).then((values: Array <boolean>) => {
-				return repository.getNextTask();
-			}).then((nextTask: Option <LongTask>) => {
-				assert.isTrue(nextTask.isDefined());
-			});
+			return repository.add("sweet-job", "{teacherId: 2, classroomId:8}", new UserId("3"), "happy")
+				.then((taskId: LongTaskId) => {
+					return Promise.all([
+						repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
+						repository.release(taskId),
+					]);
+				})
+				.then((values: Array <boolean>) => {
+					return repository.getNextTask();
+				})
+				.then((nextTask: Option <LongTask>) => {
+					assert.isTrue(nextTask.isDefined());
+				});
 		});
 	});
 
@@ -136,17 +141,37 @@ describe("Long task repository array implementation", () => {
 		it("Should result in an error if a cancelled task is updated.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
-			}).then((taskId: LongTaskId) => {
-				return repository.cancelled(taskId);
-				// repository.update(taskId, progress);
-			}).then(
-			// TODO
-			);
+			return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9")
+				.then((taskId: LongTaskId) => {
+					const status = LongTaskStatus.Processing;
+					const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("{successIds:[1], failedIds:[]}", 2, 4);
+
+					return Promise.all([
+						repository.cancel(taskId),
+						repository.update(taskId, progress, status),
+					]);
+				})
+				.catch((error) => {
+					assert.isNotNull(error);
+				});
 		});
 
-		it("Should result in an error if a cancelled task is set to completed.");
+		it("Should result in an error if a cancelled task is set to completed.", () => {
+			const repository = new LongTaskRepositoryArray;
+			const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("finished:[1,2]", 2, 4);
+			const status = LongTaskStatus.Completed;
+
+			return repository.add("cool-job", "{students:[1,2,3,4]}", new UserId("4"), "hello")
+				.then((taskId: LongTaskId) => {
+					return Promise.all([
+						repository.cancel(taskId),
+						repository.update(taskId, progress, status)
+					]);
+				})
+				.catch((error) => {
+					assert.isNotNull(error);
+				});
+		});
 
 		it("Should result in an error if a failed task is updated.", () => {
 			// it("Should result in an error if a failed task is set as completed.");
@@ -160,33 +185,33 @@ describe("Long task repository array implementation", () => {
 		it("Should result in an error if a queued task is updated in any way.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
-			}).then((taskId: LongTaskId) => {
-				const progress = LongTaskProgress.none();
-				const status = LongTaskStatus.Processing;
-				return repository.update(taskId, progress, status);
-			}).catch((error) => {
-				assert.isNotNull(error);
-			});
+			return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9")
+				.then((taskId: LongTaskId) => {
+					const progress = LongTaskProgress.none();
+					const status = LongTaskStatus.Processing;
+					return repository.update(taskId, progress, status);
+				})
+				.catch((error) => {
+					assert.isNotNull(error);
+				});
 		});
 
 		it("Should update the progress of a task.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9");
-			}).then((taskId: LongTaskId) => {
-				const status = LongTaskStatus.Processing;
-				const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 4, 5);
+			return repository.add("fun-job", "{teacher:2, students:[1,2,3,4,5]}", new UserId("6"), "9")
+				.then((taskId: LongTaskId) => {
+					const status = LongTaskStatus.Processing;
+					const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 4, 5);
 
-				return Promise.all([
-					repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
-					repository.update(taskId, progress, status),
-				]);
-			}).then((values: Array <boolean>) => {
-				assert.isTrue(values[1]);
-			});
+					return Promise.all([
+						repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
+						repository.update(taskId, progress, status),
+					]);
+				})
+				.then((values: Array <boolean>) => {
+					assert.isTrue(values[1]);
+				});
 		});
 	});
 	
@@ -194,15 +219,16 @@ describe("Long task repository array implementation", () => {
 		it("Should cancel a queued task.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
-			}).then((taskId: LongTaskId) => {
-				return repository.cancel(taskId);
-			}).then(() => {
-				return repository.getNextTask();
-			}).then((nextTask: Option <LongTask>) => {
-				assert.isFalse(nextTask.isDefined());
-			});
+			return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9")
+				.then((taskId: LongTaskId) => {
+					return repository.cancel(taskId);
+				})
+				.then(() => {
+					return repository.getNextTask();
+				})
+				.then((nextTask: Option <LongTask>) => {
+					assert.isFalse(nextTask.isDefined());
+				});
 		});
 
 		it("Should cancel a processing task.");
@@ -213,16 +239,16 @@ describe("Long task repository array implementation", () => {
 		it("Should result in an error if the specified task is already cancelled.", () => {
 			const repository = new LongTaskRepositoryArray;
 
-			return Promise.resolve().then(() => {
-				return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9");
-			}).then((taskId: LongTaskId) => {
-				return Promise.all([
-					repository.cancel(taskId),
-					repository.cancel(taskId),
-				]);
-			}).catch((error) => {
-				assert.isNotNull(error);
-			});
+			return repository.add("great-job", "{teacherId:3, classroomId:9}", new UserId("11"), "9")
+				.then((taskId: LongTaskId) => {
+					return Promise.all([
+						repository.cancel(taskId),
+						repository.cancel(taskId),
+					]);
+				})
+				.catch((error) => {
+					assert.isNotNull(error);
+				});
 		});
 	});
 
@@ -234,11 +260,14 @@ describe("Long task repository array implementation", () => {
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", new UserId("1"), "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
-			]).then((taskIds: Array <LongTaskId>) => {
+			])
+			.then((taskIds: Array <LongTaskId>) => {
 				return repository.delete(taskIds[0]);
-			}).then(() => {
+			})
+			.then(() => {
 				return repository.getNextTask();
-			}).then((task: Option <LongTask>) => {
+			})
+			.then((task: Option <LongTask>) => {
 				assert.isTrue(task.isDefined());
 
 				if (task.isDefined()) {
@@ -254,12 +283,14 @@ describe("Long task repository array implementation", () => {
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), "9"),
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", new UserId("1"), "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
-			]).then((taskIds: Array <LongTaskId>) => {
+			])
+			.then((taskIds: Array <LongTaskId>) => {
 				return Promise.all([
 					repository.delete(taskIds[0]),
 					repository.delete(taskIds[0]),
 				]);
-			}).catch((error) => {
+			})
+			.catch((error) => {
 				assert.isNotNull(error);
 			});
 		});
@@ -274,9 +305,11 @@ describe("Long task repository array implementation", () => {
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", new UserId("1"), "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), "10"),
-			]).then(() => {
+			])
+			.then((values: Array <LongTaskId>) => {
 				return repository.getTasksForSearchKey("hello");
-			}).then((tasks: Array <LongTask>) => {
+			})
+			.then((tasks: Array <LongTask>) => {
 				assert.lengthOf(tasks, 0);
 			});
 		});
@@ -290,9 +323,11 @@ describe("Long task repository array implementation", () => {
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", new UserId("1"), "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), key),
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), "10"),
-			]).then(() => {
+			])
+			.then((values: Array <LongTaskId>) => {
 				return repository.getTasksForSearchKey(key);
-			}).then((tasks: Array <LongTask>) => {
+			})
+			.then((tasks: Array <LongTask>) => {
 				assert.lengthOf(tasks, 2);
 			});
 		});
@@ -307,9 +342,11 @@ describe("Long task repository array implementation", () => {
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", new UserId("1"), "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), "10"),
-			]).then(() => {
+			])
+			.then((values: Array <LongTaskId>) => {
 				return repository.getTasksForUserId(new UserId("456"));
-			}).then((tasks: Array <LongTask>) => {
+			})
+			.then((tasks: Array <LongTask>) => {
 				assert.lengthOf(tasks, 0);
 			});
 		});
@@ -323,9 +360,11 @@ describe("Long task repository array implementation", () => {
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", userId, "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", userId, "10"),
-			]).then(() => {
+			])
+			.then((values: Array <LongTaskId>) => {
 				return repository.getTasksForUserId(userId);
-			}).then((tasks: Array <LongTask>) => {
+			})
+			.then((tasks: Array <LongTask>) => {
 				assert.lengthOf(tasks, 2);
 			});
 		});
@@ -341,7 +380,8 @@ describe("Long task repository array implementation", () => {
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", userId, "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), "1"),
 				repository.add("sweet-job", "{students:[9,10], teacher: 7}", userId, "10"),
-			]).then((taskIds: Array <LongTaskId>) => {
+			])
+			.then((taskIds: Array <LongTaskId>) => {
 				const oldDate = Date.now() - 4000;
 
 				return Promise.all([
@@ -349,11 +389,13 @@ describe("Long task repository array implementation", () => {
 					repository.claim(taskIds[1], LongTaskClaim.withExistingTimestamp(oldDate)),
 					repository.claim(taskIds[2], LongTaskClaim.withNowTimestamp()),
 				]);
-			}).then((claimed: Array <boolean>) => {
+			})
+			.then((claimed: Array <boolean>) => {
 				const duration = Duration.withSeconds(2);
 				const date = new Date();
 				return repository.getProcessingTasksWithClaimOlderThanDurationFromDate(duration, date);
-			}).then((tasks: Array <LongTask>) => {
+			})
+			.then((tasks: Array <LongTask>) => {
 				assert.lengthOf(tasks, 1);
 				assert.equal(tasks[0].attributes.type, "fabulous-job");
 			});

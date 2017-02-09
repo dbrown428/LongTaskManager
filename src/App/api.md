@@ -1,4 +1,8 @@
 
+	// validate the api type/keys against the long task list (LongTaskManager)
+	// make sure values coming in are valid.
+	// getTaskProcessorKeys
+
 ### Rest API
 - add: request JSON - taskType, params: string, ownerId, string, searchKey: array <string>
 - cancel: response JSON -

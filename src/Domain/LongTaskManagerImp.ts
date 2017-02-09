@@ -5,6 +5,7 @@ import {Logger} from "../Shared/Log/Logger";
 import {LongTaskType} from "./LongTaskType";
 import {LongTaskClaim} from "./LongTaskClaim";
 import {UserId} from "../Shared/Values/UserId";
+import {Option} from "../Shared/Values/Option";
 import {Backoff} from "../Shared/Backoff/Backoff";
 import {LongTaskManager} from "./LongTaskManager";
 import {LongTaskSettings} from "./LongTaskSettings";
@@ -21,6 +22,8 @@ interface Dictionary <T> {
 export class LongTaskManagerImp implements LongTaskManager {
 	private started: boolean;
 	private processing: Array <LongTaskId>;
+
+	// what if this was an injectable dependency?
 	private taskProcessors: Dictionary <LongTaskProcessor> = {};
 
 	constructor(
@@ -30,6 +33,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 		private logger: Logger
 	) {
 		this.started = false;
+		this.processing = [];	// this could be pluggable... eg. make explicit dependency
 	}
 
 	public registerTaskProcessor(configuration: LongTaskProcessorConfiguration): void {
@@ -61,13 +65,18 @@ export class LongTaskManagerImp implements LongTaskManager {
 		setTimeout(this.cleanup, this.config.cleanupDelay.inMilliseconds());
 	}
 
+	// cleanup class…
 	private cleanup(): void {
 		const duration = this.config.processingTimeMaximum;
-		this.repository.getProcessingTasksWithClaimIdOlderThanDuration(duration).then((tasks: Array <LongTask>) => {
+		const date = new Date();
+
+		// review...
+		this.repository.getProcessingTasksWithClaimOlderThanDurationFromDate(duration, date).then((tasks: Array <LongTask>) => {
 
 			// we could check the type of task...
 			// - given history of this task type, it usually takes X time.
 			// - release this task, or let it continue running until next cleanup.
+
 
 			for (let task in tasks) {
 				
@@ -86,16 +95,16 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	private processTasks(): void {
 	    if (this.canProcessMoreTasks()) {
-	        this.tryNextTask().then(() => {
-	        	this.scheduleProcessTasks();
-	        }).catch((error) => {
-	        	// log the error.
-	            // if error, potentially schedule a retry? depends on error. connection? db? job internal?
-	            this.scheduleProcessTasks();
-	        });
+	        this.tryNextTask()
+		        .catch((error) => {
+		        	this.logger.error(error);
+		        });
+	    } else {
+	    	this.backoff.increase();
 	    }
 
-	    // this.scheduleProcessTasks();
+	    // Do we want to wait until the task has been added to processing or errors-out before scheduling another run?
+	    this.scheduleProcessTasks();
 	}
 
 	private canProcessMoreTasks(): boolean {
@@ -104,32 +113,60 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	private tryNextTask(): Promise <boolean> {
 		return new Promise((resolve, reject) => {
-			this.repository.getNextTask().then((nextTask: LongTask) => {
-				if (nextTask.isDefined()) {
-					this.processTask(nextTask.get()).then(() => {
-						this.backoff.reset();
-					});
-				} else {
-					this.backoff.increase();
-				}
-			});
+			this.repository.getNextTask()
+				.then((nextTask: Option <LongTask>) => {
+
+					return this.processNextTaskIfAvailable(nextTask);
+				})
+				.catch((reason) => {
+					this.logger.error(reason);
+					resolve(false);
+				});
 		});
 	}
 
-	private processTask(task: LongTask): void {
-		const claimId = LongTaskClaim.withNowTimestamp();
-
-		this.repository.claim(task.identifier, claimId).then((claimed: boolean) => {
-			if ( ! claimed) {
-				const taskManager = this;
-				const key = task.attributes.type;
-				const processor = this.taskProcessors[key];
-
-				// Execute asyncronously
-				setImmediate((processor, task, taskManager) => {
-					processor.execute(task, taskManager);
-				}, processor, task, taskManager);
+	private processNextTaskIfAvailable(nextTask: Option <LongTask>): Promise <boolean> {
+		return new Promise((resolve, reject) => {
+			if (nextTask.isDefined()) {
+				return this.processTask(nextTask.get());
+			} else {
+				this.noNextTaskToProcess(resolve);
 			}
+		});
+	}
+
+	private noNextTaskToProcess(resolve) {
+		this.backoff.increase();
+		resolve(false);
+	}
+
+	// how can this be tested?
+	private processTask(task: LongTask): Promise <boolean> {
+		return new Promise((resolve, reject) => {
+			const claimId = LongTaskClaim.withNowTimestamp();
+
+			this.repository.claim(task.identifier, claimId)
+				.then((claimed: boolean) => {
+					if (claimed) {
+						return false;
+						// resolve(false);
+					} else {
+						const taskManager = this;
+						const key = task.attributes.type;
+						const processor = this.taskProcessors[key];
+
+						// Execute asyncronously
+						setImmediate((processor, task, taskManager) => {
+							processor.execute(task, taskManager);
+						}, processor, task, taskManager);
+
+						return true;
+						//resolve(true);
+					}
+				})
+				.then(() => {
+					this.backoff.reset();
+				});
 		});
 	}
 
@@ -141,56 +178,40 @@ export class LongTaskManagerImp implements LongTaskManager {
 		        setImmediate(this.processTasks);
 		    }
 		} else {
-			// log... the task manager has not been started on this system.
-			// this could be called by an "add" or something else that wants the system to start.
+			this.logger.warn("The task manager has not been started on this system.");
 		}
 	}
 
 	public addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		return new Promise((resolve, reject) => {
-			const type = taskType.value;
+			const type = taskType.type;
 			
-			this.repository.add(type, params, ownerId, searchKey).then((taskId: LongTaskId) => {
-				this.backoff.reset();
-				this.scheduleProcessTasks();
-				resolve(taskId);
-			});
+			this.repository.add(type, params, ownerId, searchKey)
+				.then((taskId: LongTaskId) => {
+					this.backoff.reset();
+					this.scheduleProcessTasks();
+					resolve(taskId);
+				});
 		});
 	}
 
-	public updateTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			// just a forwarding call... nothing to test. hmmm...
-			repository.update(taskId, progress).then((updated: boolean) => {
-				if (updated) {
-					// ?
-					resolve(true)
-				} else {
-					resolve(false);
-				}
-			});
-		});
+	public updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean> {
+		return this.repository.update(taskId, progress, status);
 	}
 
 	public completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean> {
-		
-			const status = LongTaskStatus.Completed;
+		const status = LongTaskStatus.Completed;
 
-			return this.repository.update(taskId, progress, status).then((successful: boolean) => {
+		// does this actually work with the return? wrap promise.
+		return this.repository.update(taskId, progress, status)
+			.then((successful: boolean) => {
 				if (successful) {
 					this.removeFromProcessing(taskId);
 					return true;
 				} else {
 					return false;
 				}
-			});
-
-			// .catch((error) => {
-			// 	// log error.
-			// 	// or should this bubble up to the next layer?
-			// 	resolve(false);
-			// });
-		
+			});		
 	}
 
 	private removeFromProcessing(taskId: LongTaskId): void {

@@ -212,10 +212,12 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 			const index = this.indexForTaskId(taskId);
 			const row = this.table[index];
 			
-			// Should this logic be in the repository or the layer above? How smart should the repository be?
-			// - this feels like it should be moved to task manager.
-
-			if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
+			// this feels like it should be moved into the manager...
+			// TODO
+			
+			if (row.status == LongTaskStatus.Cancelled && status == LongTaskStatus.Completed) {
+				reject("Cannot change a cancelled task to completed.");
+			} else if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
 				reject("You can only change a queued status to cancelled with an update.");
 			} else {
 				const claimHeartbeat = LongTaskClaim.withNowTimestamp();
@@ -238,7 +240,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		});
 	}
 
-	public cancel(taskId: LongTaskId): Promise <any> {
+	public cancel(taskId: LongTaskId): Promise <boolean> {
 		return new Promise((resolve, reject) => {
 			const index = this.indexForTaskId(taskId);
 			const row = this.table[index];
@@ -262,19 +264,19 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 				);
 
 				this.table[index] = updatedRow;
-				resolve(undefined);
+				resolve(true);
 			}
 		});
 	}
 
-	public delete(taskId: LongTaskId): Promise <any> {
+	public delete(taskId: LongTaskId): Promise <boolean> {
 		return new Promise((resolve, reject) => {
 			const index = this.indexForTaskId(taskId);
 
 			if (index > -1) {
 				this.table.splice(index, 1);
 				this.index.splice(index, 1);
-				resolve(undefined);
+				resolve(true);
 			} else {
 				reject("Could not find task with id '" + taskId.value + "' to delete.");
 			}

@@ -1,6 +1,6 @@
 import {Logger} from "./Logger";
 
-export class SpyLogger implements Logger {
+export class LoggerSpy implements Logger {
 	private infoCallCount: number;
 	private debugCallCount: number;
 	private traceCallCount: number;

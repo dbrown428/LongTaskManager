@@ -1,5 +1,5 @@
 import {Duration} from "../Shared/Values/Duration";
-import {LongTaskSettings} from "./LongTaskSettings";
+import {LongTaskSettings} from "../Domain/LongTaskSettings";
 
 export class LongTaskSettingsDevelopment implements LongTaskSettings {
 	cleanupDelay = Duration.withSeconds(20);

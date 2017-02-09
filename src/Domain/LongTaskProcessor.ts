@@ -1,4 +1,3 @@
-import {Promise} from "es6-promise";
 import {LongTask} from "./LongTask";
 import {LongTaskManager} from "./LongTaskManager";
 

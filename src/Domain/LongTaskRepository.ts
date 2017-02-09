@@ -74,14 +74,14 @@ export interface LongTaskRepository {
 	/**
 	 * Cancel a long running task. The promise will be rejected if the task is already cancelled.
 	 * @param  taskId	The specified task to cancel.
-	 * @return Promise with no resolved value (undefined)
+	 * @return boolean promise if the cancel succeeded or failed.
 	 */
-	cancel(taskId: LongTaskId): Promise <any>;
+	cancel(taskId: LongTaskId): Promise <boolean>;
 
 	/**
 	 * Delete a long running task. The promise will be rejected if the task is already deleted.
 	 * @param  taskId 	The specified task to delete.
-	 * @return Promise with no resolved value (undefined)
+	 * @return boolean promise if the delete succeeded or failed.
 	 */
-	delete(taskId: LongTaskId): Promise <any>;
+	delete(taskId: LongTaskId): Promise <boolean>;
 }

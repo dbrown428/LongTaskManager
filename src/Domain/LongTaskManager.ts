@@ -2,6 +2,7 @@ import {Promise} from 'es6-promise';
 import {LongTaskId} from "./LongTaskId";
 import {LongTaskType} from "./LongTaskType";
 import {UserId} from "../Shared/Values/UserId";
+import {LongTaskStatus} from "./LongTaskStatus";
 import {LongTaskProgress} from "./LongTaskProgress";
 import {LongTaskProcessor} from "./LongTaskProcessor";
 import {LongTaskAttributes} from "./LongTaskAttributes";
@@ -20,9 +21,6 @@ export interface LongTaskManager {
 	 * @return {Array <string>}
 	 */
 	getTaskProcessorKeys(): Array <string>;
-
-	// validate the api type/keys against this list.
-	// make sure values coming in.
 
 	/**
 	 * Start the system processing long tasks. The manager will continually retrieve tasks until it is shutdown.
@@ -43,9 +41,10 @@ export interface LongTaskManager {
 	 * Update a task's progress.
 	 * @param  taskId		The task that needs to be updated.
 	 * @param  progress		The progress changes.
+	 * @param  status		The status of the task.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	updateTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
+	updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean>;
 
 	/**
 	 * Mark a task as completed.

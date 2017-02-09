@@ -1,6 +1,6 @@
 import {LongTaskManager} from "./LongTaskManager";
 import {LongTaskManagerImp} from "./LongTaskManagerImp";
-import {ConsoleLogger} from "../Shared/Log/ConsoleLogger";
+import {LoggerConsole} from "../Shared/Log/LoggerConsole";
 import {LongTaskSettingsDevelopment} from "./LongTaskSettingsDevelopment";
 // import {LongTaskProcessorRegistration} from "./LongTaskProcessorRegistration";
 import {BaseTwoExponentialBackoff} from "../Shared/Backoff/BaseTwoExponentialBackoff";
@@ -8,7 +8,7 @@ import {LongTaskRepositoryArray} from "../Infrastructure/Persistence/LongTaskRep
 
 export class LongTaskManagerConfiguration {
 	static default(): LongTaskManager {
-		const logger = new ConsoleLogger;
+		const logger = new LoggerConsole;
 
 		// Who should configure the system... API/App?
 		const config = new LongTaskSettingsDevelopment;	// this is a pain point.

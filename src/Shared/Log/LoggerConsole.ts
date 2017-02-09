@@ -1,12 +1,12 @@
 import {Logger} from "./Logger";
 
-export class ConsoleLogger implements Logger {
+export class LoggerConsole implements Logger {
 	public info(message: string): void {
 		console.log("[INFO] " + message);
 	}
 
 	public debug(message: string): void {
-		conole.log("[DEBUG] " + message);
+		console.log("[DEBUG] " + message);
 	}
 
 	public trace(message: string): void {
