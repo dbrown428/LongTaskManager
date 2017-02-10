@@ -13,6 +13,7 @@ export class LongTaskAttributes {
 		readonly type: string, 
 		readonly params: string, 
 		readonly status: LongTaskStatus, 
-		readonly progress: LongTaskProgress
+		readonly progress: LongTaskProgress,
+		readonly claim: number | null,
 	) {}
 }

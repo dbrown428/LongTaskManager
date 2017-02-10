@@ -11,6 +11,7 @@ import {LongTaskRepository} from "../../Domain/LongTaskRepository";
 
 export class LongTaskRepositorySpy implements LongTaskRepository {
 	private addCallCount: number;
+	private getTaskWithIdCallCount: number;
 	private getNextTaskCallCount: number;
 	private getProcessingTasksCallCount: number;
 	private getTasksForSearchKeyCallCount: number;
@@ -23,6 +24,7 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 
 	constructor() {
 		this.addCallCount = 0;
+		this.getTaskWithIdCallCount = 0;
 		this.getNextTaskCallCount = 0;
 		this.getProcessingTasksCallCount = 0;
 		this.getTasksForSearchKeyCallCount = 0;
@@ -35,22 +37,27 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 	}
 
 	public add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		return new Promise((resolve, reject) => {
-			this.addCallCount += 1;
-			const taskId = new LongTaskId("1234567890");
-			resolve(taskId);
-		});
+		this.addCallCount += 1;
+		const taskId = new LongTaskId("1234567890");			
+		return Promise.resolve(taskId);
 	}
 
 	public addCount(): number {
 		return this.addCallCount;
 	}
 
+	public getTaskWithId(taskId: LongTaskId): Promise <Option <LongTask>> {
+		this.getTaskWithIdCallCount += 1;
+		return Promise.resolve(Option.none());
+	}
+
+	public getTaskWithIdCount(): number {
+		return this.getTaskWithIdCallCount;
+	}
+
 	public getNextTask(): Promise <Option <LongTask>> {
-		return new Promise((resolve, reject) => {
-			this.getNextTaskCallCount += 1;
-			resolve(Option.none());
-		});
+		this.getNextTaskCallCount += 1;
+		return Promise.resolve(Option.none());
 	}
 
 	public getNextTaskCount(): number {
@@ -58,58 +65,42 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 	}
 
 	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>> {
-		return new Promise((resolve, reject) => {
-			this.getProcessingTasksCallCount += 1;
-			resolve([]);
-		});
+		this.getProcessingTasksCallCount += 1;
+		return Promise.resolve([]);
 	}
 
 	public getTasksForSearchKey(key: string): Promise <Array <LongTask>> {
-		return new Promise((resolve, reject) => {
-			this.getTasksForSearchKeyCallCount += 1;
-			resolve([]);
-		});
+		this.getTasksForSearchKeyCallCount += 1;
+		return Promise.resolve([]);
 	}
 
 	public getTasksForUserId(identifier: UserId): Promise <Array <LongTask>> {
-		return new Promise((resolve, reject) => {
-			this.getTasksForUserIdCallCount += 1;
-			resolve([]);
-		});
+		this.getTasksForUserIdCallCount += 1;
+		return Promise.resolve([]);
 	}
 
-	public claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			this.claimCallCount += 1;
-			resolve(true);
-		});
+	public claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <void> {
+		this.claimCallCount += 1;
+		return Promise.resolve();
 	}
 
-	public release(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			this.releaseCallCount += 1;
-			resolve(true);
-		});
+	public release(taskId: LongTaskId): Promise <void> {	
+		this.releaseCallCount += 1;
+		return Promise.resolve();
 	}
 
-	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			this.updateCallCount += 1;
-			resolve(true);
-		});
+	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void> {
+		this.updateCallCount += 1;
+		return Promise.resolve();
 	}
 
-	public cancel(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			this.cancelCallCount += 1;
-			resolve(true);
-		});
+	public cancel(taskId: LongTaskId): Promise <void> {
+		this.cancelCallCount += 1;
+		return Promise.resolve();
 	}
 
-	public delete(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			this.deleteCallCount += 1;
-			resolve(true);
-		});
+	public delete(taskId: LongTaskId): Promise <void> {
+		this.deleteCallCount += 1;
+		return Promise.resolve();
 	}
 }

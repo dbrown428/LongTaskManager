@@ -1,9 +1,57 @@
 import {LongTaskId} from "./LongTaskId";
-import {LongTaskAttributes} from "./LongTaskAttributes";
+import {LongTaskStatus, LongTaskAttributes} from "./LongTaskAttributes";
 
 export class LongTask {
+	private attributes: LongTaskAttributes;
+
 	constructor(
-		readonly identifier: LongTaskId, 
-		readonly attributes: LongTaskAttributes
-	) {}
+		readonly identifier: LongTaskId,
+		attributes: LongTaskAttributes
+	) {
+		this.attributes = attributes;
+	}
+
+	public isClaimed(): boolean {
+		return (this.attributes.claim !== null);
+	}
+
+	public type(): string {
+		return this.attributes.type;
+	}
+
+	public params(): string {
+		return this.attributes.params;
+	}
+
+	public isProcessing(): boolean {
+		return (this.attributes.status == LongTaskStatus.Processing);
+	}
+
+	public isCompleted(): boolean {
+		return (this.attributes.status == LongTaskStatus.Completed);
+	}
+
+	public isQueued(): boolean {
+		return (this.attributes.status == LongTaskStatus.Queued);
+	}
+
+	public isFailed(): boolean {
+		return (this.attributes.status == LongTaskStatus.Failed);
+	}
+
+	public isCancelled(): boolean {
+		return (this.attributes.status == LongTaskStatus.Cancelled);
+	}
+	
+	public progressState(): string | null {
+		return this.attributes.progress.state;
+	}
+
+	public progressCurrentStep(): number | null {
+		return this.attributes.progress.currentStep;
+	}
+	
+	public progressMaximumSteps(): number | null {
+		return this.attributes.progress.maximumSteps;
+	}
 }

@@ -82,11 +82,9 @@ export class LongTaskManagerImp implements LongTaskManager {
 				
 				// this.repository.release(task.identifier).then((released: boolean) => {
 
-				// });
-
 			}
 		}).catch((reason) => {
-			// log reason.
+			this.logger.error(reason);
 		});
 
 		// Or, should we wait until the cleanup finishes or fails?
@@ -112,17 +110,10 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private tryNextTask(): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			this.repository.getNextTask()
-				.then((nextTask: Option <LongTask>) => {
-
-					return this.processNextTaskIfAvailable(nextTask);
-				})
-				.catch((reason) => {
-					this.logger.error(reason);
-					resolve(false);
-				});
-		});
+		return this.repository.getNextTask()
+			.then((nextTask: Option <LongTask>) => {
+				return this.processNextTaskIfAvailable(nextTask);
+			});
 	}
 
 	private processNextTaskIfAvailable(nextTask: Option <LongTask>): Promise <boolean> {
@@ -142,32 +133,34 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	// how can this be tested?
 	private processTask(task: LongTask): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			const claimId = LongTaskClaim.withNowTimestamp();
+		const claimId = LongTaskClaim.withNowTimestamp();
 
-			this.repository.claim(task.identifier, claimId)
-				.then((claimed: boolean) => {
-					if (claimed) {
-						return false;
-						// resolve(false);
-					} else {
-						const taskManager = this;
-						const key = task.attributes.type;
-						const processor = this.taskProcessors[key];
+		return Promise.resolve(true);
 
-						// Execute asyncronously
-						setImmediate((processor, task, taskManager) => {
-							processor.execute(task, taskManager);
-						}, processor, task, taskManager);
+		// revist... blah
+		// return this.repository.claim(task.identifier, claimId)
+		// 	.then(() => {
+		// 		if (claimed) {
+		// 			return false;
+		// 			// resolve(false);
+		// 		} else {
+		// 			const taskManager = this;
+		// 			const key = task.attributes.type;
+		// 			const processor = this.taskProcessors[key];
 
-						return true;
-						//resolve(true);
-					}
-				})
-				.then(() => {
-					this.backoff.reset();
-				});
-		});
+		// 			// Execute asyncronously
+		// 			setImmediate((processor, task, taskManager) => {
+		// 				processor.execute(task, taskManager);
+		// 			}, processor, task, taskManager);
+
+		// 			return true;
+		// 			//resolve(true);
+		// 		}
+		// 	})
+		// 	.then(() => {
+		// 		this.backoff.reset();
+		// 		return false;
+		// 	});
 	}
 
 	private scheduleProcessTasks(): void {
@@ -183,35 +176,29 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	public addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		return new Promise((resolve, reject) => {
-			const type = taskType.type;
-			
-			this.repository.add(type, params, ownerId, searchKey)
-				.then((taskId: LongTaskId) => {
-					this.backoff.reset();
-					this.scheduleProcessTasks();
-					resolve(taskId);
-				});
-		});
+		const type = taskType.type;
+		
+		return this.repository.add(type, params, ownerId, searchKey)
+			.then((taskId: LongTaskId) => {
+				this.backoff.reset();
+				this.scheduleProcessTasks();
+				return taskId;
+			});
 	}
 
-	public updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean> {
+	// maybe this should be called updateProgress
+	// remove the status option...
+	public updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void> {
 		return this.repository.update(taskId, progress, status);
 	}
 
-	public completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean> {
+	public completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
 		const status = LongTaskStatus.Completed;
 
-		// does this actually work with the return? wrap promise.
 		return this.repository.update(taskId, progress, status)
-			.then((successful: boolean) => {
-				if (successful) {
-					this.removeFromProcessing(taskId);
-					return true;
-				} else {
-					return false;
-				}
-			});		
+			.then(() => {
+				this.removeFromProcessing(taskId);
+			});
 	}
 
 	private removeFromProcessing(taskId: LongTaskId): void {
@@ -222,45 +209,34 @@ export class LongTaskManagerImp implements LongTaskManager {
 	    }
 	}
 
-	public failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			// remove from processing.
-			// log
-			// TODO
-			resolve(false);
-		});
+	public failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
+		const status = LongTaskStatus.Failed;
+
+		return this.repository.update(taskId, progress, status)
+			.then(() => {
+				this.removeFromProcessing(taskId);
+			});
 	}
 
-	public cancelTask(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-
-			// if it's processing... remove it
-			// TODO
-			resolve(false);
-		});
+	public cancelTask(taskId: LongTaskId): Promise <void> {
+		return this.repository.cancel(taskId)
+			.then(() => {
+				this.removeFromProcessing(taskId);
+			});
 	}
 
-	public deleteTask(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			// if it's processing... remove it
-			// TODO
-			resolve(false);
-		});
+	public deleteTask(taskId: LongTaskId): Promise <void> {
+		return this.repository.delete(taskId)
+			.then(() => {
+				this.removeFromProcessing(taskId);
+			});
 	}
 
 	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {
-		return new Promise((resolve, reject) => {
-
-			// TODO
-			resolve([]);
-		});
+		return this.repository.getTasksForSearchKey(searchKey);
 	}
 
 	public getTasksForUserId(userId: UserId): Promise <Array <LongTask>> {
-		return new Promise((resolve, reject) => {
-
-			// TODO
-			resolve([]);
-		});
+		return this.repository.getTasksForUserId(userId);
 	}
 }

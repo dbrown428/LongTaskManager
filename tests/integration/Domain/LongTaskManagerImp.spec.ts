@@ -63,10 +63,7 @@ describe("Long task manager", () => {
 	});
 
 	describe("Claim Task", () => {
-		it("Should handle an unexpected task claiming error.", () => {
-			// 
-		});
-
+		it("Should handle an unexpected task claiming error.");
 		it("Should decrement the available concurrency once a task is claimed.");
 	});
 

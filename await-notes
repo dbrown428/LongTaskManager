@@ -1,0 +1,17 @@
+keepTickingJobs() 
+	{
+	while ( true ) {}
+		array = [];
+		if ( while array.length < 5 )
+			handles += claimOneFromDB();
+
+		await.all( handles )
+
+		for ( var elem : array )
+			await elem.tick();
+
+		await.all( handles )
+
+		await sleepMS(30);
+	}
+}

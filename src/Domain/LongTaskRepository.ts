@@ -20,6 +20,13 @@ export interface LongTaskRepository {
 	add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
+	 * Retrieve a task with the specified identifier
+	 * @param  taskId 		The specified task to retrieve.
+	 * @return A task may or may not be defined.
+	 */
+	getTaskWithId(taskId: LongTaskId): Promise <Option <LongTask>>;
+
+	/**
 	 * Retrieve the next task that is queued.
 	 * @return A task may or may not be defined.
 	 */
@@ -38,7 +45,7 @@ export interface LongTaskRepository {
 	 * @param  key		A search key to filter tasks with.
 	 * @return A promise with zero or more tasks.
 	 */
-	getTasksForSearchKey(key: string): Promise <Array <LongTask>>;
+	getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTask>>;
 
 	/**
 	 * Retrieve tasks that match the userId.
@@ -53,14 +60,14 @@ export interface LongTaskRepository {
 	 * @param  claimId	Expecting the claim identifier.
 	 * @return true if the claim was successful, false otherwise.
 	 */
-	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean>;
+	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <void>;
 
 	/**
 	 * Release (unclaim) a task so it can be picked up for processing again.
 	 * @param  taskId	The task to be released.
 	 * @return The result of the release is returned when the promise is resolved.
 	 */
-	release(taskId: LongTaskId): Promise <boolean>;
+	release(taskId: LongTaskId): Promise <void>;
 
 	/**
 	 * Update the task with progress and status changes.
@@ -69,19 +76,19 @@ export interface LongTaskRepository {
 	 * @param  status		The current status of the task.
 	 * @return boolean promise if the update succeeded or failed.
 	 */
-	update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean>;
+	update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void>;
 	
 	/**
 	 * Cancel a long running task. The promise will be rejected if the task is already cancelled.
 	 * @param  taskId	The specified task to cancel.
 	 * @return boolean promise if the cancel succeeded or failed.
 	 */
-	cancel(taskId: LongTaskId): Promise <boolean>;
+	cancel(taskId: LongTaskId): Promise <void>;
 
 	/**
 	 * Delete a long running task. The promise will be rejected if the task is already deleted.
 	 * @param  taskId 	The specified task to delete.
 	 * @return boolean promise if the delete succeeded or failed.
 	 */
-	delete(taskId: LongTaskId): Promise <boolean>;
+	delete(taskId: LongTaskId): Promise <void>;
 }

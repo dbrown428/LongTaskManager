@@ -44,7 +44,7 @@ export interface LongTaskManager {
 	 * @param  status		The status of the task.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean>;
+	updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void>;
 
 	/**
 	 * Mark a task as completed.
@@ -52,28 +52,28 @@ export interface LongTaskManager {
 	 * @param  progress		The final progress changes.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
+	completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 	
 	/**
 	 * @param  taskId		The task that should be set as failed.
 	 * @param  progress		The final progress changes before the task failed.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <boolean>;
+	failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 
 	/**
 	 * Cancel a queued or processing task.
 	 * @param  taskId		The task that should be cancelled.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	cancelTask(taskId: LongTaskId): Promise <boolean>;
+	cancelTask(taskId: LongTaskId): Promise <void>;
 
 	/**
 	 * Delete a queued or processing task.
 	 * @param  taskId		The task that should be deleted.
 	 * @return a success boolean when the promise is resolved.
 	 */
-	deleteTask(taskId: LongTaskId): Promise <boolean>;
+	deleteTask(taskId: LongTaskId): Promise <void>;
 
 	/**
 	 * Retrieve all tasks that match the search key(s).

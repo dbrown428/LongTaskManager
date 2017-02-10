@@ -35,30 +35,30 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	public add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		return new Promise((resolve, reject) => {
-			const identifier = this.newTaskIdentifier();
-			const searchKeys = this.prepareSearchKeys(searchKey);
-			const progressState = null;
-			const progressCurrentStep = null;
-			const progressMaximumSteps = null;
-			const claimId = null;
-			const row = new DataRow(
-				identifier.value, 
-				ownerId.value, 
-				searchKeys, 
-				type, 
-				params, 
-				LongTaskStatus.Queued, 
-				progressState, 
-				progressCurrentStep, 
-				progressMaximumSteps, 
-				claimId
-			);
+		const identifier = this.newTaskIdentifier();
+		const searchKeys = this.prepareSearchKeys(searchKey);
+		const progressState = null;
+		const progressCurrentStep = null;
+		const progressMaximumSteps = null;
+		const claimId = null;
+		const row = new DataRow(
+			identifier.value, 
+			ownerId.value, 
+			searchKeys, 
+			type, 
+			params, 
+			LongTaskStatus.Queued, 
+			progressState, 
+			progressCurrentStep, 
+			progressMaximumSteps, 
+			claimId
+		);
 
-			this.table.push(row);
-			this.index.push(identifier.value);
-			resolve(identifier);
-		});
+		// Imagine this is blocking IO...
+		this.table.push(row);
+		this.index.push(identifier.value);
+		
+		return Promise.resolve(identifier);
 	}
 
 	private newTaskIdentifier(): LongTaskId {
@@ -78,76 +78,82 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		}
 	}
 
-	public claim(taskId: LongTaskId, claimId: LongTaskClaim): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			const index = this.indexForTaskId(taskId);
+	public getTaskWithId(taskId: LongTaskId): Promise <Option <LongTask>> {
+		const index = this.indexForTaskId(taskId);
 
-			this.claimTaskAtIndex(index, claimId).then((claimed: boolean) => {
-				resolve(claimed);
-			});
-		});
+		if (index > -1) {
+			const row: DataRow = this.table[index];
+			const task = this.hydrateTaskFrom(row);
+			const option = Option.some(task);
+			return Promise.resolve(option);
+		} else {
+			return Promise.resolve(Option.none());
+		}
 	}
 
-	private claimTaskAtIndex(index: number, claimId: LongTaskClaim): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			const row: DataRow = this.table[index];
+	public claim(taskId: LongTaskId, claimId: LongTaskClaim): Promise <void> {
+		const index = this.indexForTaskId(taskId);
+		const row: DataRow = this.table[index];
 
-			// how can this conditional be better organized?
-			if (this.isClaimed(row)) {
-				resolve(false);
-			} else {
-				const status = LongTaskStatus.Processing;
-				const updatedRow = new DataRow(
-					row.identifier,
-					row.ownerId,
-					row.searchKey,
-					row.type,
-					row.params,
-					status,
-					row.progressState,
-					row.progressCurrentStep,
-					row.progressMaximumSteps,
-					claimId.value
-				);
+		if (this.isClaimed(row)) {
+			return Promise.reject("The task is already claimed");
+		} else {
+			return this.claimTaskAtIndex(row, index, claimId);
+		}
+	}
 
-				this.table[index] = updatedRow;
-				resolve(true);
-			}
-		});
+	private claimTaskAtIndex(row: DataRow, index: number, claimId: LongTaskClaim): Promise <void> {
+		const status = LongTaskStatus.Processing;
+		const updatedRow = new DataRow(
+			row.identifier,
+			row.ownerId,
+			row.searchKey,
+			row.type,
+			row.params,
+			status,
+			row.progressState,
+			row.progressCurrentStep,
+			row.progressMaximumSteps,
+			claimId.value
+		);
+
+		this.table[index] = updatedRow;
+		return Promise.resolve();
 	}
 
 	private isClaimed(row: DataRow): boolean {
 		return (row.claimId != null);
 	}
 
-	public release(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			const index = this.indexForTaskId(taskId);
-			const row: DataRow = this.table[index];
+	public release(taskId: LongTaskId): Promise <void> {		
+		const index = this.indexForTaskId(taskId);
+		const row: DataRow = this.table[index];
 
-			// how can this conditional be better organized?
-			if (this.isClaimed(row)) {
-				const status = LongTaskStatus.Queued;
-				const claimId = null;
-				const updatedRow = new DataRow(
-					row.identifier,
-					row.ownerId,
-					row.searchKey,
-					row.type,
-					row.params,
-					status,
-					row.progressState,
-					row.progressCurrentStep,
-					row.progressMaximumSteps,
-					claimId
-				);
+		if (this.isClaimed(row)) {
+			return this.releaseRowAtIndex(row, index);
+		} else {
+			return Promise.reject("The task is not claimed, and therefore cannot be released");
+		}
+	}
 
-				this.table[index] = updatedRow;
-				resolve(true);
-			} else {
-				resolve(false);
-			}
-		});
+	private releaseRowAtIndex(row: DataRow, index: number): Promise <void> {
+		const status = LongTaskStatus.Queued;
+		const claimId = null;
+		const updatedRow = new DataRow(
+			row.identifier,
+			row.ownerId,
+			row.searchKey,
+			row.type,
+			row.params,
+			status,
+			row.progressState,
+			row.progressCurrentStep,
+			row.progressMaximumSteps,
+			claimId
+		);
+
+		this.table[index] = updatedRow;
+		return Promise.resolve();
 	}
 
 	private indexForTaskId(taskId: LongTaskId): number {
@@ -179,7 +185,8 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 			row.type, 
 			row.params, 
 			row.status, 
-			progress
+			progress,
+			row.claimId
 		);
 		const task = new LongTask(identifier, attributes);
 
@@ -207,18 +214,24 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		});
 	}
 
-	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean> {
-		return new Promise((resolve, reject) => {
+	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void> {
+		return new Promise((resolve: (content: void) => void, reject: (e: string) => void) => {
+			// no error handling for taskId not found...
 			const index = this.indexForTaskId(taskId);
 			const row = this.table[index];
 			
 			// this feels like it should be moved into the manager...
 			// TODO
-			
-			if (row.status == LongTaskStatus.Cancelled && status == LongTaskStatus.Completed) {
+
+			if (row.status == LongTaskStatus.Failed && status == LongTaskStatus.Completed) {
+				reject("Cannot change a failed task to completed.");
+				// throw ?
+			} else if (row.status == LongTaskStatus.Cancelled && status == LongTaskStatus.Completed) {
 				reject("Cannot change a cancelled task to completed.");
+				// throw ?
 			} else if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
 				reject("You can only change a queued status to cancelled with an update.");
+				// throw ?
 			} else {
 				const claimHeartbeat = LongTaskClaim.withNowTimestamp();
 				const updatedRow = new DataRow(
@@ -235,65 +248,68 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 				);
 
 				this.table[index] = updatedRow;
-				resolve(true);
+				// resolve();??
+				return;
 			}
 		});
 	}
 
-	public cancel(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			const index = this.indexForTaskId(taskId);
-			const row = this.table[index];
+	public cancel(taskId: LongTaskId): Promise <void> {
+		const index = this.indexForTaskId(taskId);
+		const row = this.table[index];
 
-			if (row.status == LongTaskStatus.Cancelled) {
-				reject("The task was already cancelled.");
-			} else {
-				const status = LongTaskStatus.Cancelled;
-				const claimHeartbeat = LongTaskClaim.withNowTimestamp();
-				const updatedRow = new DataRow(
-					row.identifier,
-					row.ownerId,
-					row.searchKey,
-					row.type,
-					row.params,
-					status,
-					row.progressState,
-					row.progressCurrentStep,
-					row.progressMaximumSteps,
-					claimHeartbeat.value
-				);
+		if (row.status == LongTaskStatus.Cancelled) {
+			return Promise.reject("The task was already cancelled.");
+		} else {
+			const status = LongTaskStatus.Cancelled;
+			const claimHeartbeat = LongTaskClaim.withNowTimestamp();
+			const updatedRow = new DataRow(
+				row.identifier,
+				row.ownerId,
+				row.searchKey,
+				row.type,
+				row.params,
+				status,
+				row.progressState,
+				row.progressCurrentStep,
+				row.progressMaximumSteps,
+				claimHeartbeat.value
+			);
 
-				this.table[index] = updatedRow;
-				resolve(true);
-			}
-		});
+			this.table[index] = updatedRow;
+			return Promise.resolve();
+		}
 	}
 
-	public delete(taskId: LongTaskId): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			const index = this.indexForTaskId(taskId);
+	public delete(taskId: LongTaskId): Promise <void> {
+		const index = this.indexForTaskId(taskId);
 
-			if (index > -1) {
-				this.table.splice(index, 1);
-				this.index.splice(index, 1);
-				resolve(true);
-			} else {
-				reject("Could not find task with id '" + taskId.value + "' to delete.");
-			}
-		});
+		if (index > -1) {
+			this.table.splice(index, 1);
+			this.index.splice(index, 1);
+			return Promise.resolve();
+		} else {
+			return Promise.reject("Could not find task with id '" + taskId.value + "' to delete.");
+		}
 	}
 
-	public getTasksForSearchKey(key: string): Promise <Array <LongTask>> {
+	public getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTask>> {
+		// update for array of search keys.
+		// todo
+
 		return new Promise((resolve, reject) => {
 			let results: Array <LongTask> = [];
 			
 			for (let row of this.table) {
-				const index = row.searchKey.indexOf(key);
 
-				if (index > -1) {
-					const task = this.hydrateTaskFrom(row);
-					results.push(task);
-				}
+				// the key can be an array or a single string...
+				// todo
+				// const index = row.searchKey.indexOf(key);
+
+				// if (index > -1) {
+				// 	const task = this.hydrateTaskFrom(row);
+				// 	results.push(task);
+				// }
 			}
 		
 			resolve(results);
