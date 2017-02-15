@@ -386,13 +386,13 @@ describe("Long task repository array implementation", () => {
 				repository.add("great-job", "{teacherId:3, classroomId: 9}", new UserId("2"), key),
 				repository.add("fabulous-job", "{students:[3,2,1], classroomId: 10}", new UserId("1"), "3"),
 				repository.add("awesome-job", "{students:[1,2,3,4], reportId: 1}", new UserId("4"), key),
-				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), "10"),
+				repository.add("sweet-job", "{students:[9,10], teacher: 7}", new UserId("6"), ["10", key]),
 			])
 			.then((values: Array <LongTaskId>) => {
 				return repository.getTasksForSearchKey(key);
 			})
 			.then((tasks: Array <LongTask>) => {
-				assert.lengthOf(tasks, 2);
+				assert.lengthOf(tasks, 3);
 			});
 		});
 	});

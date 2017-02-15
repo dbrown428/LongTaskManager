@@ -11,18 +11,6 @@ import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
 
 export interface LongTaskManager {
 	/**
-	 * The task manager needs to know how to map task types to task processors.
-	 * @param configuration		The long task processor configuration that should be used for processing certain tasks.
-	 */
-	registerTaskProcessor(configuration: LongTaskProcessorConfiguration);
-
-	/**
-	 * Need to be able to share the registered task processor types with other systems.
-	 * @return {Array <string>}
-	 */
-	getTaskProcessorKeys(): Array <string>;
-
-	/**
 	 * Start the system processing long tasks. The manager will continually retrieve tasks until it is shutdown.
 	 */
 	start(): void;
@@ -35,7 +23,7 @@ export interface LongTaskManager {
 	 * @param  searchKey		Filter tasks based on this value.
 	 * @return the long task id when the promise is resolved.
 	 */
-	addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: Array <string>): Promise <LongTaskId>;
+	addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
 	 * Update a task's progress.

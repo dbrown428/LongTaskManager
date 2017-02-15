@@ -6,8 +6,10 @@ import {LongTaskType} from "./LongTaskType";
 import {LongTaskClaim} from "./LongTaskClaim";
 import {UserId} from "../Shared/Values/UserId";
 import {Option} from "../Shared/Values/Option";
+import {LongTaskTracker} from "./LongTaskTracker";
 import {Backoff} from "../Shared/Backoff/Backoff";
 import {LongTaskManager} from "./LongTaskManager";
+import {LongTaskRegistry} from "./LongTaskRegistry";
 import {LongTaskSettings} from "./LongTaskSettings";
 import {LongTaskStatus} from "./LongTaskAttributes";
 import {LongTaskProgress} from "./LongTaskProgress";
@@ -15,35 +17,18 @@ import {LongTaskProcessor} from "./LongTaskProcessor";
 import {LongTaskRepository} from "./LongTaskRepository";
 import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
 
-interface Dictionary <T> {
-	[K: string]: T;
-}
-
 export class LongTaskManagerImp implements LongTaskManager {
 	private started: boolean;
-	private processing: Array <LongTaskId>;
-
-	// what if this was an injectable dependency?
-	private taskProcessors: Dictionary <LongTaskProcessor> = {};
 
 	constructor(
+		private logger: Logger,
 		private backoff: Backoff,
-		private config: LongTaskSettings, 
+		private config: LongTaskSettings,
+		private processing: LongTaskTracker,
 		private repository: LongTaskRepository,
-		private logger: Logger
+		private taskProcessors: LongTaskRegistry
 	) {
 		this.started = false;
-		this.processing = [];	// this could be pluggable... eg. make explicit dependency
-	}
-
-	public registerTaskProcessor(configuration: LongTaskProcessorConfiguration): void {
-		const key: string = configuration.key().type;
-		const processor: LongTaskProcessor = configuration.default();
-		this.taskProcessors[key] = processor;
-	}
-
-	public getTaskProcessorKeys(): Array <string> {
-		return Object.keys(this.taskProcessors);
 	}
 
 	public start(): void {
@@ -65,7 +50,6 @@ export class LongTaskManagerImp implements LongTaskManager {
 		setTimeout(this.cleanup, this.config.cleanupDelay.inMilliseconds());
 	}
 
-	// cleanup class…
 	private cleanup(): void {
 		const duration = this.config.processingTimeMaximum;
 		const date = new Date();
@@ -92,6 +76,13 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private processTasks(): void {
+		// based on ryan's suggestions this could be changed to retrieve all tasks at once...
+		// then run through all and wait for the promises to complete.
+		
+		// 1. retrieve all queued tasks (say up to 1000)
+		// 2. await each?
+		// 3. 
+
 	    if (this.canProcessMoreTasks()) {
 	        this.tryNextTask()
 		        .catch((error) => {
@@ -106,7 +97,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private canProcessMoreTasks(): boolean {
-	    return (this.processing.length < this.config.concurrencyMaximum);
+	    return (this.processing.count() < this.config.concurrencyMaximum);
 	}
 
 	private tryNextTask(): Promise <boolean> {
@@ -131,22 +122,23 @@ export class LongTaskManagerImp implements LongTaskManager {
 		resolve(false);
 	}
 
-	// how can this be tested?
 	private processTask(task: LongTask): Promise <boolean> {
 		const claimId = LongTaskClaim.withNowTimestamp();
 
-		return Promise.resolve(true);
+		// temp
+		return Promise.resolve(false);
 
-		// revist... blah
 		// return this.repository.claim(task.identifier, claimId)
 		// 	.then(() => {
 		// 		if (claimed) {
 		// 			return false;
 		// 			// resolve(false);
 		// 		} else {
+					// this.processing.add(task.identifier);
+
 		// 			const taskManager = this;
 		// 			const key = task.attributes.type;
-		// 			const processor = this.taskProcessors[key];
+		// 			const processor = this.taskProcessors.processorForKey(key);
 
 		// 			// Execute asyncronously
 		// 			setImmediate((processor, task, taskManager) => {
@@ -166,7 +158,10 @@ export class LongTaskManagerImp implements LongTaskManager {
 	private scheduleProcessTasks(): void {
 		if (this.started) {
 			if (this.backoff.delay() > 0) {
-		        setTimeout(this.processTasks, this.backoff.delay());
+				// review...
+				// this should really check if an existing timer has been set already.
+				// TODO
+		        const timeoutHandle = setTimeout(this.processTasks, this.backoff.delay());
 		    } else {
 		        setImmediate(this.processTasks);
 		    }
@@ -175,15 +170,20 @@ export class LongTaskManagerImp implements LongTaskManager {
 		}
 	}
 
+	// this validation can/could/should also be done on the layer above... TODO
 	public addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		const type = taskType.type;
-		
-		return this.repository.add(type, params, ownerId, searchKey)
-			.then((taskId: LongTaskId) => {
-				this.backoff.reset();
-				this.scheduleProcessTasks();
-				return taskId;
-			});
+
+		if (this.taskProcessors.contains(type)) {
+			return this.repository.add(type, params, ownerId, searchKey)
+				.then((taskId: LongTaskId) => {
+					this.backoff.reset();
+					this.scheduleProcessTasks();
+					return taskId;
+				});
+		} else {
+			throw TypeError("The specified long task type is not registered with the system.");
+		}
 	}
 
 	// maybe this should be called updateProgress
@@ -197,16 +197,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 		return this.repository.update(taskId, progress, status)
 			.then(() => {
-				this.removeFromProcessing(taskId);
+				this.processing.remove(taskId);
 			});
-	}
-
-	private removeFromProcessing(taskId: LongTaskId): void {
-	    const index = this.processing.indexOf(taskId);
-
-	    if (index > -1) {
-	        this.processing.splice(index, 1);
-	    }
 	}
 
 	public failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
@@ -214,21 +206,21 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 		return this.repository.update(taskId, progress, status)
 			.then(() => {
-				this.removeFromProcessing(taskId);
+				this.processing.remove(taskId);
 			});
 	}
 
 	public cancelTask(taskId: LongTaskId): Promise <void> {
 		return this.repository.cancel(taskId)
 			.then(() => {
-				this.removeFromProcessing(taskId);
+				this.processing.remove(taskId);
 			});
 	}
 
 	public deleteTask(taskId: LongTaskId): Promise <void> {
 		return this.repository.delete(taskId)
 			.then(() => {
-				this.removeFromProcessing(taskId);
+				this.processing.remove(taskId);
 			});
 	}
 

@@ -1,20 +1,21 @@
 {
-    "name": "long-task-proof",
-    "version": "0.0.2",
-    "scripts": {
-        "test": "make test"
-    },
-    "dependencies": {
-        "es6-promise": "^4.0.5"
-    },
-    "devDependencies": {
-        "@types/chai": "^3.4.34",
-        "@types/es6-promise": "0.0.32",
-        "@types/mocha": "^2.2.34",
-        "@types/node": "^7.0.4",
-        "chai": "^3.0.0",
-        "mocha": "^2.2.5",
-        "ts-node": "^1.7.2",
-        "typescript": "^2.1.4"
-    }
+  "name": "long-task-proof",
+  "version": "0.0.2",
+  "scripts": {
+    "test": "make test"
+  },
+  "dependencies": {
+    "asyncawait": "^1.0.6",
+    "es6-promise": "^4.0.5"
+  },
+  "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/es6-promise": "0.0.32",
+    "@types/mocha": "^2.2.34",
+    "@types/node": "^7.0.4",
+    "chai": "^3.0.0",
+    "mocha": "^2.2.5",
+    "ts-node": "^1.7.2",
+    "typescript": "^2.1.4"
+  }
 }

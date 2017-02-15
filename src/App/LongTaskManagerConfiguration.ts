@@ -1,24 +1,27 @@
 import {LongTaskManager} from "./LongTaskManager";
 import {LongTaskManagerImp} from "./LongTaskManagerImp";
+import {LongTaskRegistryImp} from "./LongTaskRegistryImp";
 import {LoggerConsole} from "../Shared/Log/LoggerConsole";
+import {LongTaskTrackerArray} from "./LongTaskTrackerArray";
 import {LongTaskSettingsDevelopment} from "./LongTaskSettingsDevelopment";
-// import {LongTaskProcessorRegistration} from "./LongTaskProcessorRegistration";
 import {BaseTwoExponentialBackoff} from "../Shared/Backoff/BaseTwoExponentialBackoff";
 import {LongTaskRepositoryArray} from "../Infrastructure/Persistence/LongTaskRepositoryArray";
 
 export class LongTaskManagerConfiguration {
 	static default(): LongTaskManager {
-		const logger = new LoggerConsole;
+		
+		// This could be passed in...
+		const longTaskProcessors = new LongTaskRegistryImp;
+		// longTaskProcessors.add(configuration);
 
 		// Who should configure the system... API/App?
+		const logger = new LoggerConsole;
 		const config = new LongTaskSettingsDevelopment;	// this is a pain point.
 		const repository = new LongTaskRepositoryArray;
-		// const longTaskProcessors = new LongTaskProcessorRegistration;
+		const tracker = new LongTaskTrackerArray;
 		const backoff = BaseTwoExponentialBackoff.withMultiplierAndMaximum(config.backoffStepTime, config.backoffMaximumTime);
-		const manager = new LongTaskManagerImp(backoff, config, repository, logger);
-		
-		// maybe this isn't the place to register task processors... APP perhaps?
-		// longTaskProcessors.registerInManager(manager);
+		const manager = new LongTaskManagerImp(backoff, config, tracker, repository, logger);
+
 		return manager;
 	}
 

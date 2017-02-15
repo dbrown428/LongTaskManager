@@ -215,6 +215,10 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void> {
+
+		
+
+
 		return new Promise((resolve: (content: void) => void, reject: (e: string) => void) => {
 			// no error handling for taskId not found...
 			const index = this.indexForTaskId(taskId);
@@ -294,40 +298,35 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	public getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTask>> {
-		// update for array of search keys.
-		// todo
+		let results: Array <LongTask> = [];
+		let keys = this.prepareSearchKeys(key);
 
-		return new Promise((resolve, reject) => {
-			let results: Array <LongTask> = [];
-			
-			for (let row of this.table) {
+		// rewrite in a more functional way. TODO
+		for (let row of this.table) {
+			for (let aKey of keys) {
+				const index = row.searchKey.indexOf(aKey);
 
-				// the key can be an array or a single string...
-				// todo
-				// const index = row.searchKey.indexOf(key);
-
-				// if (index > -1) {
-				// 	const task = this.hydrateTaskFrom(row);
-				// 	results.push(task);
-				// }
+				if (index > -1) {
+					const task = this.hydrateTaskFrom(row);
+					results.push(task);
+					break;
+				}
 			}
+		}
 		
-			resolve(results);
-		});
+		return Promise.resolve(results);
 	}
 
 	public getTasksForUserId(identifier: UserId): Promise <Array <LongTask>> {
-		return new Promise((resolve, reject) => {
-			let results: Array <LongTask> = [];
+		let results: Array <LongTask> = [];
 
-			for (let row of this.table) {
-				if (row.ownerId == identifier.value) {
-					const task = this.hydrateTaskFrom(row);
-					results.push(task);
-				}
+		for (let row of this.table) {
+			if (row.ownerId == identifier.value) {
+				const task = this.hydrateTaskFrom(row);
+				results.push(task);
 			}
+		}
 
-			resolve(results);
-		});
+		return Promise.resolve(results);
 	}
 }

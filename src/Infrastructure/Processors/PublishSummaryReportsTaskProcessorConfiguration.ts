@@ -9,7 +9,7 @@ export class PublishSummaryReportsTaskProcessorConfiguration implements LongTask
 	}
 
 	public default(): LongTaskProcessor {
-		// Configure dependencies here for the task processor.
+		// Configure dependencies here for the task processor, eg:
 		// - reports repository on main system
 		// - students repository on main system
 		// - file storage
