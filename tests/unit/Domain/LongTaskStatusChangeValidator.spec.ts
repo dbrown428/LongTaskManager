@@ -2,7 +2,7 @@ import {assert} from "chai";
 import {LongTaskStatus} from "../../../src/Domain/LongTaskAttributes";
 import {LongTaskStatusChangeValidator} from "../../../src/Domain/LongTaskStatusChangeValidator";
 
-describe.only("Long task status change validator", () => {
+describe("Long task status change validator", () => {
 	describe("Current status is Cancelled", () => {
 		it("should fail validation when changing the status to queued.", () => {
 			const currentStatus = LongTaskStatus.Cancelled;
