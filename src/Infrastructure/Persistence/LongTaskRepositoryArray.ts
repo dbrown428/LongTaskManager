@@ -8,8 +8,9 @@ import {LongTaskClaim} from "../../Domain/LongTaskClaim";
 import {LongTaskProgress} from "../../Domain/LongTaskProgress";
 import {LongTaskRepository} from "../../Domain/LongTaskRepository";
 import {LongTaskAttributes, LongTaskStatus} from "../../Domain/LongTaskAttributes";
+import {LongTaskStatusChangeValidator} from "../../Domain/LongTaskStatusChangeValidator";
 
-// Used to represent an entry in the table.
+// Used to represent an entry in the array table.
 class DataRow {
 	constructor(
 		readonly identifier: string, 
@@ -29,7 +30,8 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	table: Array <DataRow>;
 	index: Array <string>;
 
-	constructor() {
+	// instead of a dependency, could this be a mixin? should this be in the layer above?
+	constructor(readonly validator: LongTaskStatusChangeValidator) {
 		this.table = [];
 		this.index = [];
 	}
@@ -54,7 +56,6 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 			claimId
 		);
 
-		// Imagine this is blocking IO...
 		this.table.push(row);
 		this.index.push(identifier.value);
 		
@@ -79,15 +80,24 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	public getTaskWithId(taskId: LongTaskId): Promise <Option <LongTask>> {
-		const index = this.indexForTaskId(taskId);
-
-		if (index > -1) {
+		try {
+			const index = this.indexForTaskId(taskId);
 			const row: DataRow = this.table[index];
 			const task = this.hydrateTaskFrom(row);
 			const option = Option.some(task);
 			return Promise.resolve(option);
-		} else {
+		} catch(error) {
 			return Promise.resolve(Option.none());
+		}
+	}
+
+	private indexForTaskId(taskId: LongTaskId): number {
+		const index = this.index.indexOf(taskId.value);
+
+		if (index < 0) {
+			throw RangeError("The specified taskId does not exist.");
+		} else {
+			return index;
 		}
 	}
 
@@ -96,13 +106,9 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		const row: DataRow = this.table[index];
 
 		if (this.isClaimed(row)) {
-			return Promise.reject("The task is already claimed");
-		} else {
-			return this.claimTaskAtIndex(row, index, claimId);
+			throw Error("The task is already claimed");
 		}
-	}
 
-	private claimTaskAtIndex(row: DataRow, index: number, claimId: LongTaskClaim): Promise <void> {
 		const status = LongTaskStatus.Processing;
 		const updatedRow = new DataRow(
 			row.identifier,
@@ -129,14 +135,10 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		const index = this.indexForTaskId(taskId);
 		const row: DataRow = this.table[index];
 
-		if (this.isClaimed(row)) {
-			return this.releaseRowAtIndex(row, index);
-		} else {
-			return Promise.reject("The task is not claimed, and therefore cannot be released");
+		if ( ! this.isClaimed(row)) {
+			throw Error("The task is not claimed, and therefore cannot be released");
 		}
-	}
 
-	private releaseRowAtIndex(row: DataRow, index: number): Promise <void> {
 		const status = LongTaskStatus.Queued;
 		const claimId = null;
 		const updatedRow = new DataRow(
@@ -155,23 +157,17 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		this.table[index] = updatedRow;
 		return Promise.resolve();
 	}
-
-	private indexForTaskId(taskId: LongTaskId): number {
-		return this.index.indexOf(taskId.value);
-	}
 	
 	public getNextTask(): Promise <Option <LongTask>> {
-		return new Promise((resolve, reject) => {
-			for (let row of this.table) {
-				if (row.status == LongTaskStatus.Queued) {
-					const task = this.hydrateTaskFrom(row);
-					const option = Option.some(task);
-					resolve(option);
-				}
+		for (let row of this.table) {
+			if (row.status == LongTaskStatus.Queued) {
+				const task = this.hydrateTaskFrom(row);
+				const option = Option.some(task);
+				return Promise.resolve(option);
 			}
+		}
 
-			resolve(Option.none());
-		});
+		return Promise.resolve(Option.none());
 	}
 
 	private hydrateTaskFrom(row: DataRow): LongTask {
@@ -194,107 +190,82 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>> {
-		return new Promise((resolve, reject) => {
-			var tasks: Array <LongTask> = [];
+		var tasks: Array <LongTask> = [];
 
-			for (let row of this.table) {
-				if (row.claimId) {
-					const age = date.valueOf() - row.claimId;
-					const expired = (age > duration.inMilliseconds());
-					const processing = (row.status == LongTaskStatus.Processing);
+		for (let row of this.table) {
+			if (row.claimId) {
+				const age = date.valueOf() - row.claimId;
+				const expired = (age > duration.inMilliseconds());
+				const processing = (row.status == LongTaskStatus.Processing);
 
-					if (processing && expired) {
-						const task = this.hydrateTaskFrom(row);
-						tasks.push(task);
-					}
+				if (processing && expired) {
+					const task = this.hydrateTaskFrom(row);
+					tasks.push(task);
 				}
 			}
+		}
 
-			resolve(tasks);
-		});
+		return Promise.resolve(tasks);
 	}
 
 	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void> {
-
+		const index = this.indexForTaskId(taskId);
+		const row = this.table[index];
+		this.validateStatusUpdate(row.status, status);
 		
+		const claimHeartbeat = LongTaskClaim.withNowTimestamp();
+		const updatedRow = new DataRow(
+			row.identifier,
+			row.ownerId,
+			row.searchKey,
+			row.type,
+			row.params,
+			status,
+			progress.state,
+			progress.currentStep,
+			progress.maximumSteps,
+			claimHeartbeat.value
+		);
 
+		this.table[index] = updatedRow;
+		return Promise.resolve();
+	}
 
-		return new Promise((resolve: (content: void) => void, reject: (e: string) => void) => {
-			// no error handling for taskId not found...
-			const index = this.indexForTaskId(taskId);
-			const row = this.table[index];
-			
-			// this feels like it should be moved into the manager...
-			// TODO
-
-			if (row.status == LongTaskStatus.Failed && status == LongTaskStatus.Completed) {
-				reject("Cannot change a failed task to completed.");
-				// throw ?
-			} else if (row.status == LongTaskStatus.Cancelled && status == LongTaskStatus.Completed) {
-				reject("Cannot change a cancelled task to completed.");
-				// throw ?
-			} else if (row.status == LongTaskStatus.Queued && status != LongTaskStatus.Cancelled) {
-				reject("You can only change a queued status to cancelled with an update.");
-				// throw ?
-			} else {
-				const claimHeartbeat = LongTaskClaim.withNowTimestamp();
-				const updatedRow = new DataRow(
-					row.identifier,
-					row.ownerId,
-					row.searchKey,
-					row.type,
-					row.params,
-					status,
-					progress.state,
-					progress.currentStep,
-					progress.maximumSteps,
-					claimHeartbeat.value
-				);
-
-				this.table[index] = updatedRow;
-				// resolve();??
-				return;
-			}
-		});
+	private validateStatusUpdate(existingStatus: LongTaskStatus, newStatus: LongTaskStatus) {
+		if (this.validator.isInvalidStatusUpdate(existingStatus, newStatus)) {
+			throw Error(this.validator.failureMessage());
+		}
 	}
 
 	public cancel(taskId: LongTaskId): Promise <void> {
 		const index = this.indexForTaskId(taskId);
 		const row = this.table[index];
+		this.validateStatusUpdate(row.status, LongTaskStatus.Cancelled);
 
-		if (row.status == LongTaskStatus.Cancelled) {
-			return Promise.reject("The task was already cancelled.");
-		} else {
-			const status = LongTaskStatus.Cancelled;
-			const claimHeartbeat = LongTaskClaim.withNowTimestamp();
-			const updatedRow = new DataRow(
-				row.identifier,
-				row.ownerId,
-				row.searchKey,
-				row.type,
-				row.params,
-				status,
-				row.progressState,
-				row.progressCurrentStep,
-				row.progressMaximumSteps,
-				claimHeartbeat.value
-			);
+		const status = LongTaskStatus.Cancelled;
+		const claimHeartbeat = LongTaskClaim.withNowTimestamp();
+		const updatedRow = new DataRow(
+			row.identifier,
+			row.ownerId,
+			row.searchKey,
+			row.type,
+			row.params,
+			status,
+			row.progressState,
+			row.progressCurrentStep,
+			row.progressMaximumSteps,
+			claimHeartbeat.value
+		);
 
-			this.table[index] = updatedRow;
-			return Promise.resolve();
-		}
+		this.table[index] = updatedRow;
+		return Promise.resolve();
 	}
 
 	public delete(taskId: LongTaskId): Promise <void> {
 		const index = this.indexForTaskId(taskId);
-
-		if (index > -1) {
-			this.table.splice(index, 1);
-			this.index.splice(index, 1);
-			return Promise.resolve();
-		} else {
-			return Promise.reject("Could not find task with id '" + taskId.value + "' to delete.");
-		}
+		this.table.splice(index, 1);
+		this.index.splice(index, 1);
+		return Promise.resolve();
 	}
 
 	public getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTask>> {
@@ -320,6 +291,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	public getTasksForUserId(identifier: UserId): Promise <Array <LongTask>> {
 		let results: Array <LongTask> = [];
 
+		// what's a functional way of writing this?
 		for (let row of this.table) {
 			if (row.ownerId == identifier.value) {
 				const task = this.hydrateTaskFrom(row);
