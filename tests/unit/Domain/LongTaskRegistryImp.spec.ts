@@ -9,6 +9,17 @@ describe("Long task registry", () => {
 		assert.lengthOf(registry.keys(), 0);
 	});
 
+	it("should return false if the key does not exist.", () => {
+		const registry = new LongTaskRegistryImp;
+		assert.isFalse(registry.contains("hello"));
+	});
+
+	it("should return true if the key does exist.", () => {
+		const registry = new LongTaskRegistryImp;
+		registry.add(new PackageFilesProcessorConfigurationDummy);
+		assert.isTrue(registry.contains("PackageFilesDummy"));
+	})
+
 	it("should throw an exception when no processor exists for the specified key.", () => {
 		const registry = new LongTaskRegistryImp;
 		assert.throws(() => {
