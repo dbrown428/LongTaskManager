@@ -13,6 +13,11 @@ export class LongTaskRegistryImp implements LongTaskRegistry {
 		return Object.keys(this.taskProcessors);
 	}
 
+	public contains(key: string): boolean {
+		const processor = this.taskProcessors[key];
+		return (processor != null);
+	}
+
 	public processorForKey(key: string): LongTaskProcessor {
 		const processor = this.taskProcessors[key];
 
