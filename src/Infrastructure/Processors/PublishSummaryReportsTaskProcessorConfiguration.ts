@@ -5,7 +5,7 @@ import {LongTaskProcessorConfiguration} from "../../Domain/LongTaskProcessorConf
 
 export class PublishSummaryReportsTaskProcessorConfiguration implements LongTaskProcessorConfiguration {
 	public key(): LongTaskType {
-		return {type: "PublishSummaryReportsForStudents"};
+		return new LongTaskType("PublishSummaryReportsForStudents");
 	}
 
 	public default(): LongTaskProcessor {

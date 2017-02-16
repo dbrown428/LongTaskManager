@@ -15,6 +15,7 @@ import {LongTaskStatus} from "./LongTaskAttributes";
 import {LongTaskProgress} from "./LongTaskProgress";
 import {LongTaskProcessor} from "./LongTaskProcessor";
 import {LongTaskRepository} from "./LongTaskRepository";
+import {LongTaskParameters} from "./LongTaskParameters";
 import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
 
 export class LongTaskManagerImp implements LongTaskManager {
@@ -78,10 +79,11 @@ export class LongTaskManagerImp implements LongTaskManager {
 	private processTasks(): void {
 		// based on ryan's suggestions this could be changed to retrieve all tasks at once...
 		// then run through all and wait for the promises to complete.
-		
 		// 1. retrieve all queued tasks (say up to 1000)
 		// 2. await each?
 		// 3. 
+
+		this.logger.info(" = " + this.processing.count() + " tasks with backoff " + this.backoff.delay() + "ms")
 
 	    if (this.canProcessMoreTasks()) {
 	        this.tryNextTask()
@@ -171,24 +173,21 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	// this validation can/could/should also be done on the layer above... TODO
-	public addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		const type = taskType.type;
-
-		if (this.taskProcessors.contains(type)) {
-			return this.repository.add(type, params, ownerId, searchKey)
-				.then((taskId: LongTaskId) => {
-					this.backoff.reset();
-					this.scheduleProcessTasks();
-					return taskId;
-				});
-		} else {
+	public addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+		if ( ! this.taskProcessors.contains(taskType.type)) {
 			throw TypeError("The specified long task type is not registered with the system.");
 		}
+
+		return this.repository.add(taskType, params, ownerId, searchKey)
+			.then((taskId: LongTaskId) => {
+				this.backoff.reset();
+				this.scheduleProcessTasks();
+				return taskId;
+			});
 	}
 
-	// maybe this should be called updateProgress
-	// remove the status option...
-	public updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void> {
+	public updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
+		const status = LongTaskStatus.Processing;
 		return this.repository.update(taskId, progress, status);
 	}
 

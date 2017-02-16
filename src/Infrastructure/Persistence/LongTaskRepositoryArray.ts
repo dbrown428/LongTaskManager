@@ -4,9 +4,11 @@ import {Option} from "../../Shared/Values/Option";
 import {UserId} from "../../Shared/Values/UserId";
 import {LongTaskId} from "../../Domain/LongTaskId";
 import {Duration} from "../../Shared/Values/Duration";
+import {LongTaskType} from "../../Domain/LongTaskType";
 import {LongTaskClaim} from "../../Domain/LongTaskClaim";
 import {LongTaskProgress} from "../../Domain/LongTaskProgress";
 import {LongTaskRepository} from "../../Domain/LongTaskRepository";
+import {LongTaskParameters} from "../../Domain/LongTaskParameters";
 import {LongTaskAttributes, LongTaskStatus} from "../../Domain/LongTaskAttributes";
 import {LongTaskStatusChangeValidator} from "../../Domain/LongTaskStatusChangeValidator";
 
@@ -36,7 +38,9 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		this.index = [];
 	}
 
-	public add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+	public add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+		const taskType = type.type;
+		const jsonParams = params.toJSON();
 		const identifier = this.newTaskIdentifier();
 		const searchKeys = this.prepareSearchKeys(searchKey);
 		const progressState = null;
@@ -47,8 +51,8 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 			identifier.value, 
 			ownerId.value, 
 			searchKeys, 
-			type, 
-			params, 
+			taskType, 
+			jsonParams, 
 			LongTaskStatus.Queued, 
 			progressState, 
 			progressCurrentStep, 
@@ -177,7 +181,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 			row.progressCurrentStep, 
 			row.progressMaximumSteps
 		);
-		const attributes = new LongTaskAttributes(
+		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(
 			row.type, 
 			row.params, 
 			row.status, 

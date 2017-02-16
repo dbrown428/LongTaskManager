@@ -8,7 +8,7 @@ import {LongTaskStatus, LongTaskAttributes} from "../../../src/Domain/LongTaskAt
 describe("Long Task", () => {
 	it("should be unclaimed for empty claim values", () => {
 		const identifier = new LongTaskId("5");
-		const attributes = new LongTaskAttributes(
+		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(
 			"sweet-task", 
 			"{students:[1,2,3]}",
 			LongTaskStatus.Processing,
@@ -22,7 +22,7 @@ describe("Long Task", () => {
 
 	it("should be claimed for a set claim value", () => {
 		const identifier = new LongTaskId("5");
-		const attributes = new LongTaskAttributes(
+		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(
 			"sweet-task", 
 			"{students:[1,2,3]}",
 			LongTaskStatus.Processing,
@@ -44,7 +44,7 @@ describe("Long Task", () => {
 		const maxSteps = 16;
 		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps(state, step, maxSteps);
 		const claim = 7361718282;
-		const attributes = new LongTaskAttributes(type, params, status, progress, claim);
+		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(type, params, status, progress, claim);
 		const task = new LongTask(identifier, attributes);
 
 		assert.equal(task.type(), type);
@@ -56,7 +56,7 @@ describe("Long Task", () => {
 
 	it("should be easy to get the status", () => {
 		const identifier = new LongTaskId("5");
-		const attributes = new LongTaskAttributes(
+		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(
 			"sweet-task", 
 			"{students:[1,2,3]}",
 			LongTaskStatus.Processing,

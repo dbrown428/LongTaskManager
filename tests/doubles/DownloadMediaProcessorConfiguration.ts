@@ -5,7 +5,7 @@ import {LongTaskProcessorConfiguration} from "../../src/Domain/LongTaskProcessor
 
 export class DownloadMediaProcessorConfiguration implements LongTaskProcessorConfiguration {
 	public key(): LongTaskType {
-		return {type: "DownloadMedia"};
+		return new LongTaskType("DownloadMedia");
 	}
 
 	public default(): LongTaskProcessor {

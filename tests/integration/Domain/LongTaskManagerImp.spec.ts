@@ -11,8 +11,10 @@ import {BackoffDummy} from "../../../src/Shared/Backoff/BackoffDummy";
 import {LongTaskProgress} from "../../../src/Domain/LongTaskProgress";
 import {LongTaskManagerImp} from "../../../src/Domain/LongTaskManagerImp";
 import {LongTaskRegistryImp} from "../../../src/Domain/LongTaskRegistryImp";
+import {LongTaskParametersDummy} from "../../doubles/LongTaskParametersDummy";
 import {LongTaskTrackerArray} from "../../../src/Domain/LongTaskTrackerArray";
 import {LongTaskSettingsDevelopment} from "../../../src/App/LongTaskSettingsDevelopment";
+import {LongTaskStatusChangeValidator} from "../../../src/Domain/LongTaskStatusChangeValidator";
 import {LongTaskRepositorySpy} from "../../../src/Infrastructure/Persistence/LongTaskRepositorySpy";
 import {LongTaskRepositoryArray} from "../../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
 import {PackageFilesProcessorConfigurationDummy} from "../../doubles/PackageFilesProcessorConfigurationDummy";
@@ -23,14 +25,14 @@ describe("Long task manager", () => {
 		it("should reset the backoff.", () => {
 			const logger = new LoggerSpy;
 			const backoff = new BackoffSpy;
-			const tracker = new LongTaskTrackerArray;
+			const tracker = new LongTaskTrackerArray;	// dummy??
 			const processors = new LongTaskRegistryImp;
 			const repository = new LongTaskRepositorySpy;
 			const config = new LongTaskSettingsDevelopment;
 			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
 
-			const type: LongTaskType = {type: "awesome-task"};
-			const params = "{key:value}";
+			const type = new LongTaskType("awesome-task");
+			const params = LongTaskParametersDummy.withJSON("{key:value}");
 			const ownerId = new UserId("321");
 			const searchKey = "hello";
 
@@ -58,7 +60,8 @@ describe("Long task manager", () => {
 			const backoff = new BackoffSpy;
 			const tracker = new LongTaskTrackerArray;
 			const processors = new LongTaskRegistryImp;
-			const repository = new LongTaskRepositoryArray;
+			const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+			const repository = new LongTaskRepositoryArray(validator);
 			const config = new LongTaskSettingsDevelopment;
 			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
 
@@ -70,9 +73,9 @@ describe("Long task manager", () => {
 			// async await.
 
 			return Promise.all([
-				repository.add("awesome-task", "{key: value}", new UserId("123"), "hello"),
-				repository.add("great-task", "{students: [1,2,3,4]", new UserId("324"), "4"),
-				repository.add("ok-task", "teacher: 5", new UserId("802"), "grande"),
+				repository.add(new LongTaskType("awesome-task"), LongTaskParametersDummy.withJSON("{key: value}"), new UserId("123"), "hello"),
+				repository.add(new LongTaskType("great-task"), LongTaskParametersDummy.withJSON("{students: [1,2,3,4]"), new UserId("324"), "4"),
+				repository.add(new LongTaskType("ok-task"), LongTaskParametersDummy.withJSON("{teacher: 5}"), new UserId("802"), "grande"),
 				])
 				.then((values: Array <LongTaskId>) => {
 					const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("completed: [1,2], failed: []", 10, 15);

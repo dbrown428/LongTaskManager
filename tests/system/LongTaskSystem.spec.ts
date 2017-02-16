@@ -1,17 +1,19 @@
 import {assert} from "chai";
 import {UserId} from "../../src/Shared/Values/UserId";
-import {LoggerSpy} from "../../src/Shared/Log/LoggerSpy";
+import {LongTaskId} from "../../src/Domain/LongTaskId";
+import {LoggerConsole} from "../../src/Shared/Log/LoggerConsole";
 import {LongTaskManager} from "../../src/Domain/LongTaskManager";
 import {LongTaskManagerImp} from "../../src/Domain/LongTaskManagerImp";
 import {LongTaskRegistryImp} from "../../src/Domain/LongTaskRegistryImp";
 import {LongTaskTrackerArray} from "../../src/Domain/LongTaskTrackerArray";
+import {DownloadMediaParameters} from "../doubles/DownloadMediaParameters";
 import {LongTaskSettingsDevelopment} from "../../src/App/LongTaskSettingsDevelopment";
 import {BaseTwoExponentialBackoff} from "../../src/Shared/Backoff/BaseTwoExponentialBackoff";
 import {LongTaskProcessorConfiguration} from "../../src/Domain/LongTaskProcessorConfiguration";
 import {DownloadMediaProcessorConfiguration} from "../doubles/DownloadMediaProcessorConfiguration";
+import {LongTaskStatusChangeValidator} from "../../src/Domain/LongTaskStatusChangeValidator";
 import {LongTaskRepositoryArray} from "../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
 
-// .only
 describe("Long Task System", () => {
 	it("should process tasks", () => {
 
@@ -20,9 +22,10 @@ describe("Long Task System", () => {
 		const registry = new LongTaskRegistryImp;
 		registry.add(downloadMediaProcessorConfig);
 
-		const logger = new LoggerSpy;
+		const logger = new LoggerConsole;
 		const config = new LongTaskSettingsDevelopment;
-		const repository = new LongTaskRepositoryArray;
+		const validator = new LongTaskStatusChangeValidator;
+		const repository = new LongTaskRepositoryArray(validator);
 		const tracker = new LongTaskTrackerArray;
 		const backoff = BaseTwoExponentialBackoff.withMultiplierAndMaximum(config.backoffStepTime, config.backoffMaximumTime);
 		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, registry);
@@ -61,16 +64,14 @@ describe("Long Task System", () => {
 	});
 
 	function addSampleDownloadTaskToManager(items: Array <string>, config: LongTaskProcessorConfiguration, manager: LongTaskManager): Promise <void> {
-		const serializedItems = JSON.stringify(items);
 		const taskType = config.key();
-		const params = "{media:" + serializedItems +"}";
 		const ownerId = new UserId("123");
 		const searchKey: string = ownerId.value;
+		const params = DownloadMediaParameters.withItems(items);
 		
-		// return new Promise((resolve: (content: void) => void, reject: (e: string) => void) => {});
-		return manager.addTask(taskType, params, ownerId, searchKey).then(() => {
-
-			return;
-		});
+		return manager.addTask(taskType, params, ownerId, searchKey)
+			.then((taskId: LongTaskId) => {
+				return;
+			});
 	}
 });

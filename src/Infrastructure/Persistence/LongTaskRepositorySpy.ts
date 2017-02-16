@@ -4,10 +4,12 @@ import {UserId} from "../../Shared/Values/UserId";
 import {Option} from "../../Shared/Values/Option";
 import {LongTaskId} from "../../Domain/LongTaskId";
 import {Duration} from "../../Shared/Values/Duration";
+import {LongTaskType} from "../../Domain/LongTaskType";
 import {LongTaskClaim} from "../../Domain/LongTaskClaim";
 import {LongTaskStatus} from "../../Domain/LongTaskAttributes";
 import {LongTaskProgress} from "../../Domain/LongTaskProgress";
 import {LongTaskRepository} from "../../Domain/LongTaskRepository";
+import {LongTaskParameters} from "../../Domain/LongTaskParameters";
 
 export class LongTaskRepositorySpy implements LongTaskRepository {
 	private addCallCount: number;
@@ -36,7 +38,7 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 		this.deleteCallCount = 0;
 	}
 
-	public add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+	public add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		this.addCallCount += 1;
 		const taskId = new LongTaskId("1234567890");			
 		return Promise.resolve(taskId);

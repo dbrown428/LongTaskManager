@@ -5,7 +5,7 @@ import {LongTaskProcessorConfiguration} from "../../src/Domain/LongTaskProcessor
 
 export class PackageFilesProcessorConfigurationDummy implements LongTaskProcessorConfiguration {
 	public key(): LongTaskType {
-		return {type: "PackageFilesDummy"};
+		return new LongTaskType("PackageFilesDummy");
 	}
 
 	public default(): LongTaskProcessor {

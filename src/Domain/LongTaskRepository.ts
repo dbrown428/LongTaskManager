@@ -1,24 +1,43 @@
 import {Promise} from 'es6-promise';
 import {LongTask} from "./LongTask";
 import {LongTaskId} from "./LongTaskId";
+import {LongTaskType} from "./LongTaskType";
 import {LongTaskClaim} from "./LongTaskClaim";
 import {UserId} from "../Shared/Values/UserId";
 import {Option} from "../Shared/Values/Option";
 import {Duration} from "../Shared/Values/Duration";
 import {LongTaskStatus} from "./LongTaskAttributes";
 import {LongTaskProgress} from "./LongTaskProgress";
+import {LongTaskParameters} from "./LongTaskParameters";
+
+// Consider splitting up:
+
+// LongTasksReadRepository
+// - taskWithId
+// - tasksSithSearchKey
+// - tasksWithUserId
+// - nextTask / nextTasks?
+// - expiredProcessingTasks
+
+// LongTasksWriteRepository
+// - add
+// - claim
+// - release
+// - update
+// - delete
+// - cancel
 
 export interface LongTaskRepository {
 	/**
 	 * Add a task to the repository.
 	 * 
-	 * @param  type		Expecting a job type string.
-	 * @param  params	Expecting JSON. eg. {students:[1,2,3,4], reportId:5}
+	 * @param  type		The type of task
+	 * @param  params	The parameters needed to complete the task
 	 * @param  ownerId  The owner of the job, eg. a teacher
 	 * @param searchKey A string or array of strings that can be used for retrieving jobs.
 	 * @return LongTaskId
 	 */
-	add(type: string, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
+	add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
 	 * Retrieve a task with the specified identifier

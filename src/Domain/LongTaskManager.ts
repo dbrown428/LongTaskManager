@@ -2,64 +2,59 @@ import {Promise} from 'es6-promise';
 import {LongTaskId} from "./LongTaskId";
 import {LongTaskType} from "./LongTaskType";
 import {UserId} from "../Shared/Values/UserId";
-import {LongTaskStatus} from "./LongTaskStatus";
 import {LongTaskProgress} from "./LongTaskProgress";
-import {LongTaskProcessor} from "./LongTaskProcessor";
-import {LongTaskAttributes} from "./LongTaskAttributes";
-import {LongTaskRepository} from "./LongTaskRepository";
-import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
+import {LongTaskParameters} from "./LongTaskParameters";
 
 export interface LongTaskManager {
 	/**
-	 * Start the system processing long tasks. The manager will continually retrieve tasks until it is shutdown.
+	 * Start the system processing long tasks. The manager will continually retrieve tasks until it dies.
 	 */
 	start(): void;
 
 	/**
 	 * Add a long task to the system for processing.
 	 * @param  taskType			The type of task to be run.
-	 * @param  params			Expecting valid JSON. eg. {students:[1,2,3,4], reportId:5}
+	 * @param  params			Parameters needed to process the task.
 	 * @param  ownerId			The owner who requested the task be added.
 	 * @param  searchKey		Filter tasks based on this value.
 	 * @return the long task id when the promise is resolved.
 	 */
-	addTask(taskType: LongTaskType, params: string, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
+	addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
 	 * Update a task's progress.
 	 * @param  taskId		The task that needs to be updated.
 	 * @param  progress		The progress changes.
-	 * @param  status		The status of the task.
-	 * @return a success boolean when the promise is resolved.
+	 * @return promise
 	 */
-	updateTask(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void>;
+	updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 
 	/**
 	 * Mark a task as completed.
 	 * @param  taskId		The task that should be set as completed.
 	 * @param  progress		The final progress changes.
-	 * @return a success boolean when the promise is resolved.
+	 * @return promise
 	 */
 	completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 	
 	/**
 	 * @param  taskId		The task that should be set as failed.
 	 * @param  progress		The final progress changes before the task failed.
-	 * @return a success boolean when the promise is resolved.
+	 * @return promise
 	 */
 	failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 
 	/**
 	 * Cancel a queued or processing task.
 	 * @param  taskId		The task that should be cancelled.
-	 * @return a success boolean when the promise is resolved.
+	 * @return promise
 	 */
 	cancelTask(taskId: LongTaskId): Promise <void>;
 
 	/**
 	 * Delete a queued or processing task.
 	 * @param  taskId		The task that should be deleted.
-	 * @return a success boolean when the promise is resolved.
+	 * @return promise
 	 */
 	deleteTask(taskId: LongTaskId): Promise <void>;
 
