@@ -40,7 +40,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 
 	public add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		const taskType = type.type;
-		const jsonParams = params.toJSON();
+		const jsonParams = params.toJson();
 		const identifier = this.newTaskIdentifier();
 		const searchKeys = this.prepareSearchKeys(searchKey);
 		const progressState = null;

@@ -32,7 +32,7 @@ describe("Long task manager", () => {
 			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
 
 			const type = new LongTaskType("awesome-task");
-			const params = LongTaskParametersDummy.withJSON("{key:value}");
+			const params = LongTaskParametersDummy.withJson("{key:value}");
 			const ownerId = new UserId("321");
 			const searchKey = "hello";
 
@@ -73,9 +73,9 @@ describe("Long task manager", () => {
 			// async await.
 
 			return Promise.all([
-				repository.add(new LongTaskType("awesome-task"), LongTaskParametersDummy.withJSON("{key: value}"), new UserId("123"), "hello"),
-				repository.add(new LongTaskType("great-task"), LongTaskParametersDummy.withJSON("{students: [1,2,3,4]"), new UserId("324"), "4"),
-				repository.add(new LongTaskType("ok-task"), LongTaskParametersDummy.withJSON("{teacher: 5}"), new UserId("802"), "grande"),
+				repository.add(new LongTaskType("awesome-task"), LongTaskParametersDummy.withJson("{key: value}"), new UserId("123"), "hello"),
+				repository.add(new LongTaskType("great-task"), LongTaskParametersDummy.withJson("{students: [1,2,3,4]"), new UserId("324"), "4"),
+				repository.add(new LongTaskType("ok-task"), LongTaskParametersDummy.withJson("{teacher: 5}"), new UserId("802"), "grande"),
 				])
 				.then((values: Array <LongTaskId>) => {
 					const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("completed: [1,2], failed: []", 10, 15);

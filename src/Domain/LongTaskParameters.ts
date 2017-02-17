@@ -1,10 +1,9 @@
 export interface LongTaskParameters {
 	/**
-	 * Prepare a JSON string of all the private values needed.
-	 * 
+	 * A JSON string of all the private values needed.
 	 * @return valid json
 	 */
-	toJSON(): string;
+	toJson(): string;
 
 	/**
 	 * Parses the JSON string and sets the appropriate internal values.
@@ -16,5 +15,5 @@ export interface LongTaskParameters {
 	 * @throws SyntaxError if invalid JSON syntax
 	 * @throws Error if invalid LongTaskParameters json; each implementation has it's own attributes.
 	 */
-	//static withJSON(json: string): LongTaskParameters;
+	//static withJson(json: string): LongTaskParameters;
 }

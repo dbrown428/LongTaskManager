@@ -2,6 +2,7 @@ import {LongTaskRegistry} from "./LongTaskRegistry";
 import {LongTaskProcessor} from "./LongTaskProcessor";
 import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
 
+// see if there's a built-in solution...
 interface Dictionary <T> {
 	[K: string]: T;
 }

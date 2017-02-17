@@ -12,7 +12,7 @@ describe("Long Task Repository Spy", () => {
 	it("should increment the add call count", () => {
 		const repository = new LongTaskRepositorySpy;
 
-		return repository.add(new LongTaskType("awesome-task"), LongTaskParametersDummy.withJSON("{students:[1,2,3,4]}"), new UserId("1"), "hello")
+		return repository.add(new LongTaskType("awesome-task"), LongTaskParametersDummy.withJson("{students:[1,2,3,4]}"), new UserId("1"), "hello")
 			.then((taskId: LongTaskId) => {
 				assert.equal(1, repository.addCount());
 			});
