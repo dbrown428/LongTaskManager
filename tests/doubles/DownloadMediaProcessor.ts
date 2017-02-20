@@ -6,11 +6,15 @@ import {DownloadMediaParameters} from "./DownloadMediaParameters";
 import {LongTaskProgress} from "../../src/Domain/LongTaskProgress";
 import {LongTaskProcessor} from "../../src/Domain/LongTaskProcessor";
 
+// Rename the "doubles" directory to "example"
+// todo
+
 export class DownloadMediaProcessor implements LongTaskProcessor {
+	private stepsPerItem = 2;	// arbitrary value for demonstration purposes.
+
 	constructor(readonly httpClient: HttpClient) {}
 	
-	// should this be a fire-and-forget?
-	public async execute(task: LongTask, manager: LongTaskManager): Promise <void> {
+	public execute(task: LongTask, manager: LongTaskManager): Promise <void> {
 		console.log("Executing Task Processor...");
 
 		// Depending on the type of task, it might make sense to retrieve the task status
@@ -18,57 +22,62 @@ export class DownloadMediaProcessor implements LongTaskProcessor {
 
 		const taskId = task.identifier;
 		const jsonParams = task.params();
-		const stepsPerItem = 2;	// arbitrary value for demonstration purposes.
+		
 		const params = DownloadMediaParameters.withJson(jsonParams);
-		const maximumSteps = params.items.length * stepsPerItem;
+		const maximumSteps = params.items.length * this.stepsPerItem;
 		
 		const currentState = DownloadMediaState.withJson(task.progressState());
 		const itemsToBeProcessed = currentState.diff(params.items);
-		var currentStep = currentState.count() * stepsPerItem;
+		var currentStep = currentState.count() * this.stepsPerItem;
 
-		return new Promise <void> ((resolve, reject) => {
+		return new Promise <void> (async (resolve, reject) => {
+			console.log("Processing list...");
 
-			// this isn't working how I expected with the await stuff.
-			itemsToBeProcessed.map(async (url: string, index: number) => {
-				console.log("Downloading '" + url + "'")
+			try {
+				for (var i = 0; i < itemsToBeProcessed.length; i++) {
+					const url = itemsToBeProcessed[i];
+					console.log("Downloading '" + url + "'");
 
-				// For demo purposes only, download each item twice.
-				for (var i = 0; i < stepsPerItem; i++) {
-					currentStep += 1;
+					// process(url)
+					// cleanup this mess...
 
+					let response;
+
+					// Continue processing the list on individual item failures.
 					try {
-						// not sure why the "await" is not needed, but the compiler complaied when it was present.
-						const data = await this.httpClient.get(url);
-						currentState.addToSuccess(url);
-						console.log("success");
+						currentStep += 1;
+						response = await this.httpClient.get(url);
 					} catch (error) {
 						currentState.addToFailed(url, error);
-						console.log("failed");
+						console.log("item failed '" + url + "'");
+						continue;
 					}
+
+					// Do something with the response.
+					currentStep += 1;
+					console.log("Response: " + response);
+
+					currentState.addToSuccess(url);
+					console.log("success '" + url + "'");
+
+					const state = currentState.toJson();
+					const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps(state, currentStep, maximumSteps);
+					
+					console.log("Updating task progress");
+					await manager.updateTaskProgress(taskId, progress);
 				}
 
+				console.log("Completed task");
 				const state = currentState.toJson();
 				const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps(state, currentStep, maximumSteps);
 				
-				// It's possible the task was cancelled or deleted and will throw an exception if we try to update it.
-				try {
-					// will this await be needed?
-					await manager.updateTaskProgress(taskId, progress);
+				await manager.completedTask(taskId, progress);
+				resolve();
 
-				} catch (error) {
-					// Need more resolution on the exception types... 
-					// What's the error? If it's a status change exception (TaskCompletedException)
-					// then we need to terminate the task. Otherwise we can log it and continue on.
-					
-					reject(error);
-				}
-			});
-
-
-			// 
-			// await manager.completedTask(taskId, progress);
-
-			resolve();
+			} catch (error) {
+				console.log("Major failure: " + error);
+				reject(error);
+			}
 		});
 	}
 }

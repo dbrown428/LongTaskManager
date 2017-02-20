@@ -3,10 +3,14 @@ import {LongTask} from "../../../src/Domain/LongTask";
 import {HttpClientSpy} from "../../doubles/HttpClientSpy";
 import {LongTaskId} from "../../../src/Domain/LongTaskId";
 import {LongTaskManagerSpy} from "../../doubles/LongTaskManagerSpy";
+import {LongTaskProgress} from "../../../src/Domain/LongTaskProgress";
+import {LongTaskManagerMock} from "../../doubles/LongTaskManagerMock";
 import {LongTaskAttributes} from "../../../src/Domain/LongTaskAttributes";
 import {DownloadMediaProcessor} from "../../doubles/DownloadMediaProcessor";
+import {HttpClientOddRequestFailures} from "../../doubles/HttpClientOddRequestFailures";
+import {LongTaskManagerFailToUpdateProgressDummy} from "../../doubles/LongTaskManagerFailToUpdateProgressDummy";
 
-describe("Download media processor", () => {
+describe.only("Download media processor", () => {
 	it("should notify the manager of progress and completion.", async () => {
 		const identifier = new LongTaskId("4");
 		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
@@ -17,29 +21,47 @@ describe("Download media processor", () => {
 		const processor = new DownloadMediaProcessor(httpClientSpy);
 		
 		await processor.execute(task, managerSpy);
-		assert.equal(6, httpClientSpy.getCount());
+		assert.equal(3, httpClientSpy.getCount());
 		assert.equal(3, managerSpy.updateTaskProgressCount());
 		assert.equal(1, managerSpy.completedTaskCount());
 	});
 
-	it("should stop processing when the status changes to 'cancelled' by another party.");
+	it("should continue processing when step failures occur.", () => {		
+		const identifier = new LongTaskId("4");
+		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
+		const task = new LongTask(identifier, attributes);
 
-	// 	// managerSpy = new LongTaskManagerSpy
-	// 	// after x progress calls, then the status changes to "cancelled"
+		const managerMock = new LongTaskManagerMock;
+		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps('{"success":[2],"failed":[1,3]}', 3, 3);
 
-	// 	assert.equal(4, httpClientSpy.getCount());
-	// 	assert.equal(2, managerSpy.progressCount());
-	// 	// expecting an exception on the 4th progress count.
-	// 	assert.equal(0, managerSpy.completedCount());
-	// });
+		managerMock.expectingCompletedTaskProgressToEqual(progress);
+		// failure messages?
 
-	it("should stop processing when the status changes to 'deleted' by another party.");
+		const httpClient = new HttpClientOddRequestFailures;
+		const processor = new DownloadMediaProcessor(httpClient);
 
-	// 	// managerSpy = new LongTaskManagerSpy
-	// 	// after x progress calls, then the status changes to "deleted"
+		return processor.execute(task, managerMock)
+			.catch((error) => {
+				assert.isNotNull(error);
+			});
+	});
 
-	// 	assert.equal(2, httpClientSpy.getCount());
-	// 	assert.equal(1, managerSpy.progressCount());
-	// 	assert.equal(0, managerSpy.completedCount());
-	// });
+	it("should stop processing when the status changes to 'cancelled'.", () => {
+		const identifier = new LongTaskId("4");
+		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
+		const task = new LongTask(identifier, attributes);
+
+		const managerMock = new LongTaskManagerFailToUpdateProgressDummy;
+		const httpClientSpy = new HttpClientSpy;
+		const processor = new DownloadMediaProcessor(httpClientSpy);
+		
+		return processor.execute(task, managerMock)
+			.catch((error) => {
+				assert.isNotNull(error);
+			});
+	});
+
+	// Need more resolution on the errors...
+	it("should stop when the completed task update fails.");
+
 });

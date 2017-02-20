@@ -26,6 +26,8 @@ export interface LongTaskManager {
 	 * @param  taskId		The task that needs to be updated.
 	 * @param  progress		The progress changes.
 	 * @return promise
+	 *
+	 * @throws
 	 */
 	updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 
@@ -34,6 +36,8 @@ export interface LongTaskManager {
 	 * @param  taskId		The task that should be set as completed.
 	 * @param  progress		The final progress changes.
 	 * @return promise
+	 *
+	 * @throws
 	 */
 	completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 	
@@ -41,6 +45,8 @@ export interface LongTaskManager {
 	 * @param  taskId		The task that should be set as failed.
 	 * @param  progress		The final progress changes before the task failed.
 	 * @return promise
+	 *
+	 * @throws
 	 */
 	failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
 
@@ -48,6 +54,8 @@ export interface LongTaskManager {
 	 * Cancel a queued or processing task.
 	 * @param  taskId		The task that should be cancelled.
 	 * @return promise
+	 *
+	 * @throws
 	 */
 	cancelTask(taskId: LongTaskId): Promise <void>;
 
@@ -55,6 +63,8 @@ export interface LongTaskManager {
 	 * Delete a queued or processing task.
 	 * @param  taskId		The task that should be deleted.
 	 * @return promise
+	 *
+	 * @throws
 	 */
 	deleteTask(taskId: LongTaskId): Promise <void>;
 
