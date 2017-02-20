@@ -9,6 +9,11 @@ import {LongTaskParameters} from "../../src/Domain/LongTaskParameters";
 
 export class LongTaskManagerMock implements LongTaskManager {
 	private expectingCompletedTaskProgress: LongTaskProgress;
+	private shouldFailCompletedTask: boolean;
+
+	constructor() {
+		this.shouldFailCompletedTask = false;
+	}
 
 	public start(): void {}
 
@@ -27,11 +32,16 @@ export class LongTaskManagerMock implements LongTaskManager {
 			assert.equal(progress.maximumSteps, this.expectingCompletedTaskProgress.maximumSteps);
 		}
 
+		assert.isFalse(this.shouldFailCompletedTask);
 		return Promise.resolve();
 	}
 
 	public expectingCompletedTaskProgressToEqual(progress: LongTaskProgress): void {
 		this.expectingCompletedTaskProgress = progress;
+	}
+
+	public setCompletedTaskToFail(flag: boolean) {
+		this.shouldFailCompletedTask = flag;
 	}
 
 	public failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
