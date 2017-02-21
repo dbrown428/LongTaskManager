@@ -37,7 +37,7 @@ export class DownloadMediaProcessor implements LongTaskProcessor {
 	}
 	
 	public execute(task: LongTask, manager: LongTaskManager): Promise <void> {
-		console.log("Executing Task...");
+		console.log("DownloadMediaProcessor is processing '" + task.identifier.value + "'");
 		this.state = DownloadMediaState.withJson(task.progressState());
 		this.currentStep = this.state.count() * this.stepsPerItem;
 

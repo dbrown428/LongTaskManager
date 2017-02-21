@@ -81,9 +81,9 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 		return Promise.resolve([]);
 	}
 
-	public claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <void> {
+	public claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean> {
 		this.claimCallCount += 1;
-		return Promise.resolve();
+		return Promise.resolve(true);
 	}
 
 	public release(taskId: LongTaskId): Promise <void> {	

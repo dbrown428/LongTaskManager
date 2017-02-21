@@ -83,12 +83,11 @@ export interface LongTaskRepository {
 	 * 
 	 * @param  taskId   The task the system wants to claim.
 	 * @param  claimId	Expecting the claim identifier.
-	 * @return Promise
+	 * @return Promise resolves true when task is claimed, false otherwise.
 	 *
 	 * @throws RangeError 	If the taskId is not found.
-	 * @throws Error		If the task is already claimed.
 	 */
-	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <void>;
+	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean>;
 
 	/**
 	 * Release (unclaim) a task so it can be picked up for processing again.

@@ -148,6 +148,8 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 
+			// update all tests with await.
+
 			return repository.add(new LongTaskType("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId:9}"), new UserId("11"), "9")
 				.then((taskId: LongTaskId) => {
 					return Promise.all([
@@ -155,9 +157,12 @@ describe("Long task repository array implementation", () => {
 						repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
 					]);
 				})
-				.catch((error) => {
-					assert.isNotNull(error);
+				.then((values: Array <boolean>) => {
+					assert.isFalse(values[1]);
 				});
+				// .catch((error) => {
+				// 	assert.isNotNull(error);
+				// });
 		});
 
 		it("Should be able to release a claimed task.", () => {

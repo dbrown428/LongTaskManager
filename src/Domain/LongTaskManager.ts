@@ -69,6 +69,12 @@ export interface LongTaskManager {
 	deleteTask(taskId: LongTaskId): Promise <void>;
 
 	/**
+	 * Retrieve the current task processing count.
+	 * @return number
+	 */
+	processingCount(): number;
+
+	/**
 	 * Retrieve all tasks that match the search key(s).
 	 * @param  searchKey	A string or array of strings to filter
 	 * @return an array of tasks when the promise is resolved.

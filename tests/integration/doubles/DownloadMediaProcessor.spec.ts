@@ -11,7 +11,7 @@ import {DownloadMediaProcessor} from "../../doubles/DownloadMediaProcessor";
 import {HttpClientOddRequestFailures} from "../../doubles/HttpClientOddRequestFailures";
 import {LongTaskManagerFailToUpdateProgressDummy} from "../../doubles/LongTaskManagerFailToUpdateProgressDummy";
 
-describe.only("Download media processor", () => {
+describe("Download media processor", () => {
 	it("should notify the manager of progress and completion.", async () => {
 		const identifier = new LongTaskId("4");
 		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
@@ -34,12 +34,12 @@ describe.only("Download media processor", () => {
 		const task = new LongTask(identifier, attributes);
 
 		// use a mocking library instead... TODO
-		const managerMock = new LongTaskManagerMock;
-		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps('{"success":[2],"failed":[1,3]}', 3, 3);
-
-		managerMock.expectingCompletedTaskProgressToEqual(progress);
 		// sinonjs?
+		const managerMock = new LongTaskManagerMock;
+		
 		// failure messages?
+		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps('{"success":[2],"failed":[1,3]}', 3, 3);
+		managerMock.expectingCompletedTaskProgressToEqual(progress);
 
 		const httpClient = new HttpClientOddRequestFailures;
 		const manipulatorDummy = new ImageManipulatorDummy;

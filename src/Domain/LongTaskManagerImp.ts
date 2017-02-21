@@ -1,5 +1,4 @@
 import {LongTask} from "./LongTask";
-import {Promise} from 'es6-promise';
 import {LongTaskId} from "./LongTaskId";
 import {Logger} from "../Shared/Log/Logger";
 import {LongTaskType} from "./LongTaskType";
@@ -24,7 +23,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 	constructor(
 		private logger: Logger,
 		private backoff: Backoff,
-		private config: LongTaskSettings,
+		private settings: LongTaskSettings,
 		private processing: LongTaskTracker,
 		private repository: LongTaskRepository,
 		private taskProcessors: LongTaskRegistry
@@ -48,11 +47,11 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private scheduleCleanup(): void {
-		setTimeout(this.cleanup, this.config.cleanupDelay.inMilliseconds());
+		setTimeout(this.cleanup, this.settings.cleanupDelay.inMilliseconds());
 	}
 
 	private cleanup(): void {
-		const duration = this.config.processingTimeMaximum;
+		const duration = this.settings.processingTimeMaximum;
 		const date = new Date();
 
 		// review...
@@ -77,19 +76,15 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private processTasks(): void {
-		// based on ryan's suggestions this could be changed to retrieve all tasks at once...
-		// then run through all and wait for the promises to complete.
-		// 1. retrieve all queued tasks (say up to 1000)
-		// 2. await each?
-		// 3. 
-
 		this.logger.info(" = " + this.processing.count() + " tasks with backoff " + this.backoff.delay() + "ms")
 
 	    if (this.canProcessMoreTasks()) {
-	        this.tryNextTask()
-		        .catch((error) => {
-		        	this.logger.error(error);
-		        });
+	    	this.logger.info("Can process more tasks");
+	    	
+	    	// Do this in bulk... retrieve 100+ tasks at a time.
+	    	// todo
+	    	this.processNextTask();
+
 	    } else {
 	    	this.backoff.increase();
 	    }
@@ -99,62 +94,40 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private canProcessMoreTasks(): boolean {
-	    return (this.processing.count() < this.config.concurrencyMaximum);
+	    return (this.processing.count() < this.settings.concurrencyMaximum);
 	}
 
-	private tryNextTask(): Promise <boolean> {
-		return this.repository.getNextTask()
-			.then((nextTask: Option <LongTask>) => {
-				return this.processNextTaskIfAvailable(nextTask);
-			});
+	private async processNextTask(): Promise <void> {
+		const taskOption = await this.repository.getNextTask();
+
+		if (taskOption.isDefined()) {
+			await this.process(taskOption.get());
+		} else {
+			this.backoff.increase();
+		}
 	}
 
-	private processNextTaskIfAvailable(nextTask: Option <LongTask>): Promise <boolean> {
-		return new Promise((resolve, reject) => {
-			if (nextTask.isDefined()) {
-				return this.processTask(nextTask.get());
-			} else {
-				this.noNextTaskToProcess(resolve);
-			}
-		});
-	}
+	private async process(task: LongTask): Promise <void> {
+		// promise.
 
-	private noNextTaskToProcess(resolve) {
-		this.backoff.increase();
-		resolve(false);
-	}
-
-	private processTask(task: LongTask): Promise <boolean> {
+		this.logger.info(" + Attempting to claim task (" + task.identifier.value + ")");
 		const claimId = LongTaskClaim.withNowTimestamp();
+		const claimed = await this.repository.claim(task.identifier, claimId);
+		
+		if ( ! claimed)	{
+			this.logger.info("The task (" + task.identifier.value + ") was already claimed.");
+			return;
+		}
 
-		// temp
-		return Promise.resolve(false);
+		this.processing.add(task.identifier);
 
-		// return this.repository.claim(task.identifier, claimId)
-		// 	.then(() => {
-		// 		if (claimed) {
-		// 			return false;
-		// 			// resolve(false);
-		// 		} else {
-					// this.processing.add(task.identifier);
+		const taskManager = this;
+		const key = task.type();
+		const processor = this.taskProcessors.processorForKey(key);
 
-		// 			const taskManager = this;
-		// 			const key = task.attributes.type;
-		// 			const processor = this.taskProcessors.processorForKey(key);
-
-		// 			// Execute asyncronously
-		// 			setImmediate((processor, task, taskManager) => {
-		// 				processor.execute(task, taskManager);
-		// 			}, processor, task, taskManager);
-
-		// 			return true;
-		// 			//resolve(true);
-		// 		}
-		// 	})
-		// 	.then(() => {
-		// 		this.backoff.reset();
-		// 		return false;
-		// 	});
+		setImmediate((processor, task, taskManager) => {
+			processor.execute(task, taskManager);
+		}, processor, task, taskManager);
 	}
 
 	private scheduleProcessTasks(): void {
@@ -173,54 +146,54 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	// this validation can/could/should also be done on the layer above... TODO
-	public addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+	public async addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		if ( ! this.taskProcessors.contains(taskType.type)) {
+			// create new exception type.
+			// todo
 			throw TypeError("The specified long task type is not registered with the system.");
 		}
 
-		return this.repository.add(taskType, params, ownerId, searchKey)
-			.then((taskId: LongTaskId) => {
-				this.backoff.reset();
-				this.scheduleProcessTasks();
-				return taskId;
-			});
+		const taskId = await this.repository.add(taskType, params, ownerId, searchKey);
+		this.backoff.reset();
+		this.scheduleProcessTasks();
+		return taskId;	// resolve(taskId);
 	}
 
-	public updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
+	public async updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
 		const status = LongTaskStatus.Processing;
-		return this.repository.update(taskId, progress, status);
+
+		try {
+			await this.repository.update(taskId, progress, status);
+		} catch (error) {
+			this.processing.remove(taskId);
+			throw error;
+		}
 	}
 
-	public completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
+	public async completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
 		const status = LongTaskStatus.Completed;
-
-		return this.repository.update(taskId, progress, status)
-			.then(() => {
-				this.processing.remove(taskId);
-			});
+		await this.repository.update(taskId, progress, status)
+		this.processing.remove(taskId);
 	}
 
-	public failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
+	public async failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
 		const status = LongTaskStatus.Failed;
-
-		return this.repository.update(taskId, progress, status)
-			.then(() => {
-				this.processing.remove(taskId);
-			});
+		await this.repository.update(taskId, progress, status)	
+		this.processing.remove(taskId);
 	}
 
-	public cancelTask(taskId: LongTaskId): Promise <void> {
-		return this.repository.cancel(taskId)
-			.then(() => {
-				this.processing.remove(taskId);
-			});
+	public async cancelTask(taskId: LongTaskId): Promise <void> {
+		await this.repository.cancel(taskId);
+		this.processing.remove(taskId);
 	}
 
-	public deleteTask(taskId: LongTaskId): Promise <void> {
-		return this.repository.delete(taskId)
-			.then(() => {
-				this.processing.remove(taskId);
-			});
+	public async deleteTask(taskId: LongTaskId): Promise <void> {
+		await this.repository.delete(taskId)
+		this.processing.remove(taskId);
+	}
+
+	public processingCount(): number {
+		return this.processing.count();
 	}
 
 	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {

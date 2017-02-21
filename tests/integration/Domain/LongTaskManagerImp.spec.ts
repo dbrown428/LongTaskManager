@@ -43,15 +43,14 @@ describe("Long task manager", () => {
 				});
 		});
 
+		it("should throw an exception if an invalid task type is added.");
 		it("should not process tasks unless the system has been started.");
 	});
 
 	// verify when we claim a task it's added to the processing list.
 	// todo
 	describe("Claim Task", () => {
-		it("should change the processing count when a task is claimed,", () => {}
-
-		);
+		it("should change the processing count when a task is claimed,");
 	});
 
 	describe("Complete Task", () => {

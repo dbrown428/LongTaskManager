@@ -105,12 +105,12 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		}
 	}
 
-	public claim(taskId: LongTaskId, claimId: LongTaskClaim): Promise <void> {
+	public claim(taskId: LongTaskId, claimId: LongTaskClaim): Promise <boolean> {
 		const index = this.indexForTaskId(taskId);
 		const row: DataRow = this.table[index];
 
 		if (this.isClaimed(row)) {
-			throw Error("The task is already claimed");
+			return Promise.resolve(false);
 		}
 
 		const status = LongTaskStatus.Processing;
@@ -128,7 +128,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		);
 
 		this.table[index] = updatedRow;
-		return Promise.resolve();
+		return Promise.resolve(true);
 	}
 
 	private isClaimed(row: DataRow): boolean {
