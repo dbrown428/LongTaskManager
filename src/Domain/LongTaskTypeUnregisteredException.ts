@@ -1,4 +1,1 @@
-export class LongTaskTypeUnregisteredException extends TypeError {
-
-	// constructor(message)
-}
+export class LongTaskTypeUnregisteredException extends TypeError {}

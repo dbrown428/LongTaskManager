@@ -1,14 +1,14 @@
-import {PackageFilesDummy} from "./PackageFilesDummy";
 import {LongTaskType} from "../../src/Domain/LongTaskType";
+import {LongTaskProcessorDummy} from "./LongTaskProcessorDummy";
 import {LongTaskProcessor} from "../../src/Domain/LongTaskProcessor";
 import {LongTaskProcessorConfiguration} from "../../src/Domain/LongTaskProcessorConfiguration";
 
-export class PackageFilesProcessorConfigurationDummy implements LongTaskProcessorConfiguration {
+export class LongTaskProcessorConfigurationDummy2 implements LongTaskProcessorConfiguration {
 	public key(): LongTaskType {
-		return LongTaskType.withValue("PackageFilesDummy");
+		return LongTaskType.withValue("make-decent-things-happen");
 	}
 
 	public default(): LongTaskProcessor {
-		return new PackageFilesDummy;
+		return new LongTaskProcessorDummy;
 	}
 }

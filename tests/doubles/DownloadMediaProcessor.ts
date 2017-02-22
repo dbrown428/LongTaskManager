@@ -21,9 +21,6 @@ import {DownloadMediaParameters} from "./DownloadMediaParameters";
 import {LongTaskProgress} from "../../src/Domain/LongTaskProgress";
 import {LongTaskProcessor} from "../../src/Domain/LongTaskProcessor";
 
-// Rename the "doubles" directory to "example"
-// todo
-
 export class DownloadMediaProcessor implements LongTaskProcessor {
 	private currentStep: number;
 	private httpClient: HttpClient;

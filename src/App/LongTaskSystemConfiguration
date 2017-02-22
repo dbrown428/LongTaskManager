@@ -1,9 +1,0 @@
-
-LongTaskSystem
-- development
-- production
-
-
-- call the LongTaskManagerConfiguration
-- pass in the LongTaskProcessorConfiguration
-- pass in the LongTaskSettings

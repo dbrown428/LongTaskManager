@@ -21,8 +21,6 @@ import {LongTaskTypeUnregisteredException} from "./LongTaskTypeUnregisteredExcep
 export class LongTaskManagerImp implements LongTaskManager {
 	private started: boolean;
 
-	// this would be better as a static method...
-	// look into how we specify this in the interface. TODO
 	constructor(
 		private logger: Logger,
 		private backoff: Backoff,
@@ -104,10 +102,12 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private async processNextTask(): Promise <void> {
-		const taskOption = await this.repository.getNextTask();
+		// change this to many... temp
+		const nextTasks = await this.repository.getNextQueuedTasks(1);
 
-		if (taskOption.isDefined()) {
-			await this.process(taskOption.get());
+		// TEMP -  update to multiple... incorporate the concurrency limit and currently processing. TODO
+		if (nextTasks.length > 0) {
+			await this.process(nextTasks[0]);
 		} else {
 			this.backoff.increase();
 		}
