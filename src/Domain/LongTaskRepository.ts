@@ -35,8 +35,7 @@ export interface LongTaskRepository {
 	 * 
 	 * @return A task may or may not be defined.
 	 */
-	getNextTask(): Promise <Option <LongTask>>;
-	// rename: getNextQueuedTasks(count: number): Promise <Array <LongTask>>;
+	getNextQueuedTasks(count: number): Promise <Array <LongTask>>;
 
 	/**
 	 * Retrieve all processing tasks with a claim older than the specified duration.

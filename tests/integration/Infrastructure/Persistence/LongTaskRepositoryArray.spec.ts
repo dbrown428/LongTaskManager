@@ -25,9 +25,10 @@ describe("Long task repository array implementation", () => {
 			const searchKey = "8";
 			const params = LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId:5}");
 			const taskId: LongTaskId = await repository.add(type, params, ownerId, searchKey);
-			const nextTask: Option <LongTask> = await repository.getNextTask();
+			const nextTasks = await repository.getNextQueuedTasks(1);
 
-			assert.isTrue(nextTask.isDefined());
+			assert.lengthOf(nextTasks, 1);
+			assert.equal(nextTasks[0].identifier.value, taskId.value);
 		});
 	});
 
@@ -35,9 +36,9 @@ describe("Long task repository array implementation", () => {
 		it("should return an empty option when there is no next task.", async () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
-			const nextTask: Option <LongTask> = repository.getNextTask();
+			const nextTasks = await repository.getNextQueuedTasks(1);
 
-			assert.isTrue(nextTask.isEmpty());
+			assert.lengthOf(nextTasks, 0);
 		});
 
 		it("Should return the first of many queued tasks.", async () => {
@@ -50,10 +51,10 @@ describe("Long task repository array implementation", () => {
 				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), ownerId, "2"),
 			]);
 
-			const nextTask: Option <LongTask> = await repository.getNextTask();
+			const nextTasks = await repository.getNextQueuedTasks(1);
 			
-			assert.isTrue(nextTask.isDefined());
-			assert.equal(nextTask.get().type(), "great-job");
+			assert.lengthOf(nextTasks, 1);
+			assert.equal(nextTasks[0].type(), "great-job");
 		});
 
 		it("Should return the first queued task.", async () => {
@@ -71,9 +72,30 @@ describe("Long task repository array implementation", () => {
 				repository.claim(values[1], LongTaskClaim.withNowTimestamp()),
 			]);
 
-			const nextTask: Option <LongTask> = await repository.getNextTask();
-			assert.isTrue(nextTask.isDefined());
-			assert.equal(nextTask.get().type(), "awesome-job");
+			const nextTasks = await repository.getNextQueuedTasks(1);
+			assert.lengthOf(nextTasks, 1);
+			assert.equal(nextTasks[0].type(), "awesome-job");
+		});
+
+		it("should return many queued tasks.", async () => {
+			const validator = new LongTaskStatusChangeValidator;
+			const repository = new LongTaskRepositoryArray(validator);
+
+			const values: Array <LongTaskId> = await Promise.all([
+				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
+				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), new UserId("6"), "10"),
+			]);
+			await Promise.all([
+				repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
+				repository.claim(values[2], LongTaskClaim.withNowTimestamp()),
+			]);
+
+			const nextTasks = await repository.getNextQueuedTasks(4);
+			assert.lengthOf(nextTasks, 2);
+			assert.equal(nextTasks[0].type(), "fabulous-job");
+			assert.equal(nextTasks[1].type(), "sweet-job");
 		});
 	});
 
@@ -85,7 +107,7 @@ describe("Long task repository array implementation", () => {
 			
 			const claimId = LongTaskClaim.withNowTimestamp();
 			await repository.claim(taskId, claimId);
-			const tasks = await repository.getTasksWithIds([taskId]),
+			const tasks = await repository.getTasksWithIds([taskId]);
 
 			assert.lengthOf(tasks, 1);
 			assert.isTrue(tasks[0].isClaimed());
@@ -111,7 +133,7 @@ describe("Long task repository array implementation", () => {
 			
 			await repository.claim(taskId, LongTaskClaim.withNowTimestamp());
 			await repository.release(taskId);
-			const task = await repository.getTasksWithIds([taskId]);
+			const tasks = await repository.getTasksWithIds([taskId]);
 
 			assert.lengthOf(tasks, 1);
 			assert.isFalse(tasks[0].isClaimed());
@@ -130,7 +152,7 @@ describe("Long task repository array implementation", () => {
 			await repository.update(taskId, progress, status);
 			const tasks = await repository.getTasksWithIds([taskId]);
 
-			assert.lenghtOf(tasks, 1);
+			assert.lengthOf(tasks, 1);
 			const task = tasks[0];
 			assert.equal(task.progressCurrentStep(), 4);
 			assert.equal(task.progressMaximumSteps(), 5);
@@ -147,7 +169,7 @@ describe("Long task repository array implementation", () => {
 			await repository.cancel(taskId);
 			const tasks = await repository.getTasksWithIds([taskId]);
 			
-			assert.lenghtOf(tasks, 1);
+			assert.lengthOf(tasks, 1);
 			assert.isTrue(tasks[0].isCancelled());
 		});
 	});
@@ -163,10 +185,10 @@ describe("Long task repository array implementation", () => {
 			]);
 
 			await repository.delete(taskIds[0]);
-			const nextTask: Option <LongTask> = await repository.getNextTask();
+			const nextTasks = await repository.getNextQueuedTasks(1);
 		
-			assert.isTrue(nextTask.isDefined());
-			assert.equal(nextTask.get().type(), "fabulous-job");
+			assert.lengthOf(nextTasks, 1);
+			assert.equal(nextTasks[0].type(), "fabulous-job");
 		});
 
 		it("should result in an error when trying to delete a task that doesn't exist.", async () => {
@@ -226,8 +248,8 @@ describe("Long task repository array implementation", () => {
 			const tasks = await repository.getTasksWithIds(retrieveIds);
 
 			assert.lengthOf(tasks, 2);
-			assert.equal(tasks[0].identifier, sampleTaskIds[0]);
-			assert.equal(tasks[1].identifier, sampleTaskIds[2]);
+			assert.equal(tasks[0].identifier.value, sampleTaskIds[0].value);
+			assert.equal(tasks[1].identifier.value, sampleTaskIds[2].value);
 		});
 	});
 	
@@ -289,14 +311,14 @@ describe("Long task repository array implementation", () => {
 				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), userId, "10"),
 			]);
 
-			const tasks: Array <LongTask> = repository.getTasksForUserId(userId);
+			const tasks: Array <LongTask> = await repository.getTasksForUserId(userId);
 			assert.lengthOf(tasks, 2);
 		});
 	});
 
 	// remove...
 	describe("Tasks older than duration", () => {
-		it("should retrieve processing tasks that have a expired.", () => {
+		it("should retrieve processing tasks that have a expired.", async() => {
 			const userId = new UserId("456");
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);

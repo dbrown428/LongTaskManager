@@ -14,7 +14,7 @@ import {LongTaskParameters} from "../../Domain/LongTaskParameters";
 export class LongTaskRepositorySpy implements LongTaskRepository {
 	private addCallCount: number;
 	private getTasksWithIdsCallCount: number;
-	private getNextTaskCallCount: number;
+	private getNextQueuedTasksCallCount: number;
 	private getProcessingTasksCallCount: number;
 	private getTasksForSearchKeyCallCount: number;
 	private getTasksForUserIdCallCount: number;
@@ -27,7 +27,7 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 	constructor() {
 		this.addCallCount = 0;
 		this.getTasksWithIdsCallCount = 0;
-		this.getNextTaskCallCount = 0;
+		this.getNextQueuedTasksCallCount = 0;
 		this.getProcessingTasksCallCount = 0;
 		this.getTasksForSearchKeyCallCount = 0;
 		this.getTasksForUserIdCallCount = 0;
@@ -57,13 +57,13 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 		return this.getTasksWithIdsCallCount;
 	}
 
-	public getNextTask(): Promise <Option <LongTask>> {
-		this.getNextTaskCallCount += 1;
-		return Promise.resolve(Option.none());
+	public getNextQueuedTasks(count: number): Promise <Array <LongTask>> {
+		this.getNextQueuedTasksCallCount += 1;
+		return Promise.resolve([]);
 	}
 
-	public getNextTaskCount(): number {
-		return this.getNextTaskCallCount;
+	public getNextQueuedTasksCount(): number {
+		return this.getNextQueuedTasksCallCount;
 	}
 
 	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>> {

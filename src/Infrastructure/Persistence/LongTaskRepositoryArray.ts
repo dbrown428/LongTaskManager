@@ -86,23 +86,6 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		}
 	}
 
-	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
-		
-
-		// try {
-		// 	const index = this.indexForTaskId(taskId);
-		// 	const row: DataRow = this.table[index];
-		// 	const task = this.hydrateTaskFrom(row);
-		// 	const option = Option.some(task);
-		// 	return Promise.resolve(option);
-		// } catch(error) {
-		// 	return Promise.resolve(Option.none());
-		// }
-
-
-		return Promsie.resolve([]);
-	}
-
 	private indexForTaskId(taskId: LongTaskId): number {
 		const index = this.index.indexOf(taskId.value);
 
@@ -170,16 +153,21 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		return Promise.resolve();
 	}
 	
-	public getNextTask(): Promise <Option <LongTask>> {
+	public getNextQueuedTasks(count: number): Promise <Array <LongTask>> {
+		var nextTasks: Array <LongTask> = [];
+
 		for (let row of this.table) {
 			if (row.status == LongTaskStatus.Queued) {
 				const task = this.hydrateTaskFrom(row);
-				const option = Option.some(task);
-				return Promise.resolve(option);
+				nextTasks.push(task);
+
+				if (nextTasks.length >= count) {
+					break;
+				}
 			}
 		}
 
-		return Promise.resolve(Option.none());
+		return Promise.resolve(nextTasks);
 	}
 
 	private hydrateTaskFrom(row: DataRow): LongTask {
@@ -282,9 +270,20 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
-		// TODO
+		var tasks: Array <LongTask> = [];
 
-		return Promise.resolve([]);
+		for (let taskId of ids) {
+			try {
+				const index = this.indexForTaskId(taskId);
+				const row: DataRow = this.table[index];
+				const task = this.hydrateTaskFrom(row);
+				tasks.push(task);
+			} catch(error) {
+				continue;
+			}
+		}
+
+		return Promise.resolve(tasks);
 	}
 
 	public getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTask>> {
