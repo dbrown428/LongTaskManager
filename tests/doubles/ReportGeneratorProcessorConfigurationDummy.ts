@@ -5,7 +5,7 @@ import {LongTaskProcessorConfiguration} from "../../src/Domain/LongTaskProcessor
 
 export class ReportGeneratorProcessorConfigurationDummy implements LongTaskProcessorConfiguration {
 	public key(): LongTaskType {
-		return new LongTaskType("ReportGeneratorDummy");
+		return LongTaskType.withValue("ReportGeneratorDummy");
 	}
 
 	public default(): LongTaskProcessor {

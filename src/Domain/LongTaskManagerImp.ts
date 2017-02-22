@@ -16,10 +16,13 @@ import {LongTaskProcessor} from "./LongTaskProcessor";
 import {LongTaskRepository} from "./LongTaskRepository";
 import {LongTaskParameters} from "./LongTaskParameters";
 import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
+import {LongTaskTypeUnregisteredException} from "./LongTaskTypeUnregisteredException";
 
 export class LongTaskManagerImp implements LongTaskManager {
 	private started: boolean;
 
+	// this would be better as a static method...
+	// look into how we specify this in the interface. TODO
 	constructor(
 		private logger: Logger,
 		private backoff: Backoff,
@@ -54,7 +57,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 		const duration = this.settings.processingTimeMaximum;
 		const date = new Date();
 
-		// review...
+		// REDO...
 		this.repository.getProcessingTasksWithClaimOlderThanDurationFromDate(duration, date).then((tasks: Array <LongTask>) => {
 
 			// we could check the type of task...
@@ -78,13 +81,16 @@ export class LongTaskManagerImp implements LongTaskManager {
 	private processTasks(): void {
 		this.logger.info(" = " + this.processing.count() + " tasks with backoff " + this.backoff.delay() + "ms")
 
+		// update to Ryan's suggestion... TODO
+		// see Async/Await notes.
+
 	    if (this.canProcessMoreTasks()) {
 	    	this.logger.info("Can process more tasks");
 	    	
-	    	// Do this in bulk... retrieve 100+ tasks at a time.
-	    	// todo
-	    	this.processNextTask();
+	    	// Retrieve up to settings.maximumConcurrency tasks at a time.
+	    	// or (settings.maximumConcurrency - processing.count)
 
+	    	this.processNextTask();
 	    } else {
 	    	this.backoff.increase();
 	    }
@@ -108,8 +114,6 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private async process(task: LongTask): Promise <void> {
-		// promise.
-
 		this.logger.info(" + Attempting to claim task (" + task.identifier.value + ")");
 		const claimId = LongTaskClaim.withNowTimestamp();
 		const claimed = await this.repository.claim(task.identifier, claimId);
@@ -145,18 +149,16 @@ export class LongTaskManagerImp implements LongTaskManager {
 		}
 	}
 
-	// this validation can/could/should also be done on the layer above... TODO
 	public async addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		if ( ! this.taskProcessors.contains(taskType.type)) {
-			// create new exception type.
-			// todo
-			throw TypeError("The specified long task type is not registered with the system.");
+		if ( ! this.taskProcessors.contains(taskType.value)) {
+			throw new LongTaskTypeUnregisteredException("The specified long task type (" + taskType.value + ") is not registered with the system.");
+			// throw TypeError("The specified long task type is not registered with the system.");
 		}
 
 		const taskId = await this.repository.add(taskType, params, ownerId, searchKey);
 		this.backoff.reset();
 		this.scheduleProcessTasks();
-		return taskId;	// resolve(taskId);
+		return Promise.resolve(taskId);
 	}
 
 	public async updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
@@ -164,6 +166,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 		try {
 			await this.repository.update(taskId, progress, status);
+			await this.repository.release(taskId);
 		} catch (error) {
 			this.processing.remove(taskId);
 			throw error;
@@ -192,8 +195,11 @@ export class LongTaskManagerImp implements LongTaskManager {
 		this.processing.remove(taskId);
 	}
 
-	public processingCount(): number {
-		return this.processing.count();
+	public async getTasksCurrentlyProcessing(): Promise <Array <LongTask>> {
+		const taskIds = this.processing.list();
+		const tasks = await this.repository.getTasksWithIds(taskIds);
+
+		return Promise.resolve(tasks);
 	}
 
 	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {

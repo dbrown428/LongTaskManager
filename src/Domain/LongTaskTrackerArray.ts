@@ -25,4 +25,8 @@ export class LongTaskTrackerArray implements LongTaskTracker {
 	public count(): number {
 		return this.processing.length;
 	}
+
+	public list(): Array <LongTaskId> {
+		return this.processing;
+	}
 }

@@ -25,6 +25,8 @@ class DataRow {
 		readonly progressCurrentStep: number | null, 
 		readonly progressMaximumSteps: number | null, 
 		readonly claimId: number | null
+		// claimCount... how many times has a task been claimed without progress being written to it?
+		// this will be helpful for tasks that are timing out.
 	) {}
 }
 
@@ -32,14 +34,15 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	table: Array <DataRow>;
 	index: Array <string>;
 
-	// instead of a dependency, could this be a mixin? should this be in the layer above?
+	// This validator feels dirty, but I'm not sure how else to make sure the user doesn't feed
+	// in an incorrect value.
 	constructor(readonly validator: LongTaskStatusChangeValidator) {
 		this.table = [];
 		this.index = [];
 	}
 
 	public add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		const taskType = type.type;
+		const taskType = type.value;
 		const jsonParams = params.toJson();
 		const identifier = this.newTaskIdentifier();
 		const searchKeys = this.prepareSearchKeys(searchKey);
@@ -70,7 +73,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		// Just for demo purposes in this file...
 		const timestamp = new Date().getTime();
 		const randomSequence = Math.random().toString(36).substring(4);
-		const identifier = new LongTaskId(timestamp + "_" + randomSequence);
+		const identifier = LongTaskId.withValue(timestamp + "_" + randomSequence);
 
 		return identifier;
 	}
@@ -83,16 +86,21 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		}
 	}
 
-	public getTaskWithId(taskId: LongTaskId): Promise <Option <LongTask>> {
-		try {
-			const index = this.indexForTaskId(taskId);
-			const row: DataRow = this.table[index];
-			const task = this.hydrateTaskFrom(row);
-			const option = Option.some(task);
-			return Promise.resolve(option);
-		} catch(error) {
-			return Promise.resolve(Option.none());
-		}
+	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
+		
+
+		// try {
+		// 	const index = this.indexForTaskId(taskId);
+		// 	const row: DataRow = this.table[index];
+		// 	const task = this.hydrateTaskFrom(row);
+		// 	const option = Option.some(task);
+		// 	return Promise.resolve(option);
+		// } catch(error) {
+		// 	return Promise.resolve(Option.none());
+		// }
+
+
+		return Promsie.resolve([]);
 	}
 
 	private indexForTaskId(taskId: LongTaskId): number {
@@ -175,7 +183,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	private hydrateTaskFrom(row: DataRow): LongTask {
-		const identifier = new LongTaskId(row.identifier);
+		const identifier = LongTaskId.withValue(row.identifier);
 		const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps(
 			row.progressState,
 			row.progressCurrentStep, 
@@ -193,6 +201,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		return task;
 	}
 
+	// Possibly remove this...
 	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>> {
 		var tasks: Array <LongTask> = [];
 
@@ -270,6 +279,12 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		this.table.splice(index, 1);
 		this.index.splice(index, 1);
 		return Promise.resolve();
+	}
+
+	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
+		// TODO
+
+		return Promise.resolve([]);
 	}
 
 	public getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTask>> {

@@ -1,3 +1,7 @@
 export class LongTaskType {
-	constructor(readonly type: string) {}
+	public static withValue(value: string): LongTaskType {
+		return new LongTaskType(value);
+	}
+
+	private constructor(readonly value: string) {}
 }

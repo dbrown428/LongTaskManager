@@ -10,23 +10,6 @@ import {LongTaskStatus} from "./LongTaskAttributes";
 import {LongTaskProgress} from "./LongTaskProgress";
 import {LongTaskParameters} from "./LongTaskParameters";
 
-// Consider splitting up:
-
-// LongTasksReadRepository
-// - taskWithId
-// - tasksSithSearchKey
-// - tasksWithUserId
-// - nextTask / nextTasks?
-// - expiredProcessingTasks
-
-// LongTasksWriteRepository
-// - add
-// - claim
-// - release
-// - update
-// - delete
-// - cancel
-
 export interface LongTaskRepository {
 	/**
 	 * Add a task to the repository.
@@ -40,11 +23,12 @@ export interface LongTaskRepository {
 	add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
-	 * Retrieve a task with the specified identifier
-	 * @param  taskId 		The specified task to retrieve.
-	 * @return A task may or may not be defined.
+	 * Retrieve an array of tasks given an array of LongTaskId
+	 * 
+	 * @param  ids			The specified tasks to retrieve.
+	 * @return an array of tasks when the promise resolves.
 	 */
-	getTaskWithId(taskId: LongTaskId): Promise <Option <LongTask>>;
+	getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>>;
 
 	/**
 	 * Retrieve the next task that is queued.
@@ -52,6 +36,7 @@ export interface LongTaskRepository {
 	 * @return A task may or may not be defined.
 	 */
 	getNextTask(): Promise <Option <LongTask>>;
+	// rename: getNextQueuedTasks(count: number): Promise <Array <LongTask>>;
 
 	/**
 	 * Retrieve all processing tasks with a claim older than the specified duration.
@@ -61,6 +46,7 @@ export interface LongTaskRepository {
 	 * @return Promise
 	 */
 	getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>>;
+	// REMOVE ^^^^
 
 	/**
 	 * Retrieve tasks that match the search key.
@@ -79,7 +65,8 @@ export interface LongTaskRepository {
 	getTasksForUserId(identifier: UserId): Promise <Array <LongTask>>;
 
 	/**
-	 * Claim a task for processing.
+	 * Claim a task for processing. Make sure the underlying implementation is 
+	 * concurrency safe.
 	 * 
 	 * @param  taskId   The task the system wants to claim.
 	 * @param  claimId	Expecting the claim identifier.
@@ -90,7 +77,8 @@ export interface LongTaskRepository {
 	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean>;
 
 	/**
-	 * Release (unclaim) a task so it can be picked up for processing again.
+	 * Release (unclaim) a task so it can be picked up for processing again. When you
+	 * release a task you should nullify the claim_id and set the status to Queued.
 	 * 
 	 * @param  taskId		The task to be released.
 	 * @return Promise

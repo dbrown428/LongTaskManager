@@ -30,7 +30,7 @@ export class LongTaskRegistryImp implements LongTaskRegistry {
 	}
 	
 	public add(configuration: LongTaskProcessorConfiguration): void {
-		const key: string = configuration.key().type;
+		const key: string = configuration.key().value;
 		const processor: LongTaskProcessor = configuration.default();
 		this.taskProcessors[key] = processor;
 	}

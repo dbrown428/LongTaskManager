@@ -10,7 +10,7 @@ export class LongTaskManagerFailToUpdateProgressDummy implements LongTaskManager
 	public start(): void {}
 
 	public addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		return Promise.resolve(new LongTaskId("123"));
+		return Promise.resolve(LongTaskId.withValue("123"));
 	}
 
 	public updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
@@ -31,6 +31,10 @@ export class LongTaskManagerFailToUpdateProgressDummy implements LongTaskManager
 
 	public deleteTask(taskId: LongTaskId): Promise <void> {
 		return Promise.resolve();
+	}
+
+	public getTasksCurrentlyProcessing(): Promise <Array <LongTask>> {
+		return Promise.resolve([]);
 	}
 
 	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {

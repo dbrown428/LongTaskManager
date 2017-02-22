@@ -1,6 +1,7 @@
 import {LongTaskProgress} from "./LongTaskProgress";
 
 // this would be better as a class... then we can do stuff like status.isFailed()?
+// and possibly encapsulate the flow from queued > processing > completed | failed.
 export enum LongTaskStatus {
 	Queued = 1,
 	Processing,
@@ -15,7 +16,7 @@ export class LongTaskAttributes {
 	}
 
 	private constructor(
-		readonly type: string, 
+		readonly type: string,
 		readonly params: string, 
 		readonly status: LongTaskStatus, 
 		readonly progress: LongTaskProgress,

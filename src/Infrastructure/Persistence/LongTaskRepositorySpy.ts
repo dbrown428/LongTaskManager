@@ -13,7 +13,7 @@ import {LongTaskParameters} from "../../Domain/LongTaskParameters";
 
 export class LongTaskRepositorySpy implements LongTaskRepository {
 	private addCallCount: number;
-	private getTaskWithIdCallCount: number;
+	private getTasksWithIdsCallCount: number;
 	private getNextTaskCallCount: number;
 	private getProcessingTasksCallCount: number;
 	private getTasksForSearchKeyCallCount: number;
@@ -26,7 +26,7 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 
 	constructor() {
 		this.addCallCount = 0;
-		this.getTaskWithIdCallCount = 0;
+		this.getTasksWithIdsCallCount = 0;
 		this.getNextTaskCallCount = 0;
 		this.getProcessingTasksCallCount = 0;
 		this.getTasksForSearchKeyCallCount = 0;
@@ -40,7 +40,7 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 
 	public add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		this.addCallCount += 1;
-		const taskId = new LongTaskId("1234567890");			
+		const taskId = LongTaskId.withValue("1234567890");			
 		return Promise.resolve(taskId);
 	}
 
@@ -48,13 +48,13 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 		return this.addCallCount;
 	}
 
-	public getTaskWithId(taskId: LongTaskId): Promise <Option <LongTask>> {
-		this.getTaskWithIdCallCount += 1;
-		return Promise.resolve(Option.none());
+	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
+		this.getTasksWithIdsCallCount += 1;
+		return Promise.resolve([]);
 	}
 
-	public getTaskWithIdCount(): number {
-		return this.getTaskWithIdCallCount;
+	public getTasksWithIdsCount(): number {
+		return this.getTasksWithIdsCallCount;
 	}
 
 	public getNextTask(): Promise <Option <LongTask>> {
@@ -68,6 +68,11 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 
 	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>> {
 		this.getProcessingTasksCallCount += 1;
+		return Promise.resolve([]);
+	}
+
+	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
+		this.getTasksWithIdsCallCount += 1;
 		return Promise.resolve([]);
 	}
 

@@ -36,10 +36,16 @@ export class DownloadMediaProcessor implements LongTaskProcessor {
 		this.manipulator = manipulator;
 	}
 	
-	public execute(task: LongTask, manager: LongTaskManager): Promise <void> {
+	// The goal is not to process the entire set of items. Do one step, or a batch of steps. Update the manager, then die.
+	// The manager will then requeue the task.
+	// If all the steps have been completed then report "completed" to the manager.
+	public tick(task: LongTask, manager: LongTaskManager): Promise <void> {
 		console.log("DownloadMediaProcessor is processing '" + task.identifier.value + "'");
 		this.state = DownloadMediaState.withJson(task.progressState());
 		this.currentStep = this.state.count() * this.stepsPerItem;
+
+		// REDO THIS SO we are processing a step or a batch of steps, then terminating.
+		// check if we are completed. How many items need to be processed?
 
 		return new Promise <void> (async (resolve, reject) => {
 			try {
@@ -96,6 +102,9 @@ export class DownloadMediaProcessor implements LongTaskProcessor {
 			await manager.updateTaskProgress(taskId, progress);
 		}
 
+
+		// MOVE THIS... this needs to be on a conditional.
+		// TODO
 		console.log("Completed List");
 
 		// Notify the manager of task completion.

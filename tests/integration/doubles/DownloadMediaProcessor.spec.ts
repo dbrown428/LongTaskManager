@@ -13,7 +13,7 @@ import {LongTaskManagerFailToUpdateProgressDummy} from "../../doubles/LongTaskMa
 
 describe("Download media processor", () => {
 	it("should notify the manager of progress and completion.", async () => {
-		const identifier = new LongTaskId("4");
+		const identifier = LongTaskId.withValue("4");
 		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
 		const task = new LongTask(identifier, attributes);
 
@@ -22,14 +22,14 @@ describe("Download media processor", () => {
 		const manipulatorDummy = new ImageManipulatorDummy;
 		const processor = new DownloadMediaProcessor(httpClientSpy, manipulatorDummy);
 		
-		await processor.execute(task, managerSpy);
+		await processor.tick(task, managerSpy);
 		assert.equal(3, httpClientSpy.getCount());
 		assert.equal(3, managerSpy.updateTaskProgressCount());
 		assert.equal(1, managerSpy.completedTaskCount());
 	});
 
 	it("should continue processing when step failures occur.", async () => {		
-		const identifier = new LongTaskId("4");
+		const identifier = LongTaskId.withValue("4");
 		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
 		const task = new LongTask(identifier, attributes);
 
@@ -46,14 +46,14 @@ describe("Download media processor", () => {
 		const processor = new DownloadMediaProcessor(httpClient, manipulatorDummy);
 
 		try {
-			await processor.execute(task, managerMock);
+			await processor.tick(task, managerMock);
 		} catch (error) {
 			assert.isNotNull(error);
 		}
 	});
 
 	it("should stop processing when the status changes to 'cancelled'.", async () => {
-		const identifier = new LongTaskId("4");
+		const identifier = LongTaskId.withValue("4");
 		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
 		const task = new LongTask(identifier, attributes);
 
@@ -63,14 +63,14 @@ describe("Download media processor", () => {
 		const processor = new DownloadMediaProcessor(httpClientSpy, manipulatorDummy);
 		
 		try {
-			await processor.execute(task, managerDummy);
+			await processor.tick(task, managerDummy);
 		} catch (error) {
 			assert.isNotNull(error);
 		}
 	});
 
 	it("should stop when the completed task update fails.", async () => {
-		const identifier = new LongTaskId("4");
+		const identifier = LongTaskId.withValue("4");
 		const attributes = LongTaskAttributes.withTypeParams("awesome-task", '{"items":[1,2,3]}');
 		const task = new LongTask(identifier, attributes);
 
@@ -82,7 +82,7 @@ describe("Download media processor", () => {
 		const processor = new DownloadMediaProcessor(httpClientSpy, manipulatorDummy);
 
 		try {
-			await processor.execute(task, managerMock);
+			await processor.tick(task, managerMock);
 		} catch (error) {
 			assert.isNotNull(error);
 		}

@@ -14,6 +14,7 @@ export class LongTaskManagerSpy implements LongTaskManager {
 	private failedTaskCallCount: number;
 	private cancelTaskCallCount: number;
 	private deleteTaskCallCount: number;
+	private getTasksCurrentlyProcessingCallCount: number;
 	private getTasksForSearchKeyCallCount: number;
 	private getTasksForUserIdCallCount: number;
 
@@ -25,6 +26,7 @@ export class LongTaskManagerSpy implements LongTaskManager {
 		this.failedTaskCallCount = 0;
 		this.cancelTaskCallCount = 0;
 		this.deleteTaskCallCount = 0;
+		this.getTasksCurrentlyProcessingCallCount = 0;
 		this.getTasksForSearchKeyCallCount = 0;
 		this.getTasksForUserIdCallCount = 0;
 	}
@@ -39,7 +41,7 @@ export class LongTaskManagerSpy implements LongTaskManager {
 
 	public addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		this.addTaskCallCount += 1;
-		return Promise.resolve(new LongTaskId("123"));
+		return Promise.resolve(LongTaskId.withValue("123"));
 	}
 
 	public addTaskCount(): number {
@@ -89,6 +91,15 @@ export class LongTaskManagerSpy implements LongTaskManager {
 
 	public deleteTaskCount(): number {
 		return this.deleteTaskCallCount;
+	}
+
+	public getTasksCurrentlyProcessing(): Promise <Array <LongTask>> {
+		this.getTasksCurrentlyProcessingCallCount += 1;
+		return Promise.resolve([]);
+	}
+
+	public getTasksCurrentlyProcessingCount(): number {
+		return this.getTasksCurrentlyProcessingCallCount;
 	}
 
 	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {

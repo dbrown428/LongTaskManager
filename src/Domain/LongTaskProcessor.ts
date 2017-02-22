@@ -12,11 +12,19 @@ import {LongTaskManager} from "./LongTaskManager";
 
 export interface LongTaskProcessor {
 	/**
-	 * The LongTaskManager will call this method asyncronously. Your long task procesor should provide 
-	 * periodic updates to the long task manager.
+	 * The LongTaskManager will call this method asyncronously. Most tasks can be broken 
+	 * into logical steps, and after each step or a batch of steps have completed you 
+	 * should update the manager with progress. The system will requeue your long task 
+	 * after you report progress, so your task should terminate after you report progress.
+	 * 
+	 * Your long task should not attempt to execute the entire task in one run, but instead 
+	 * think of how many steps of this task can I safely get done in 200ms or less?
+	 *
+	 * When you're task has finished processing all steps, make sure to update the manager
+	 * with the completed progress.
 	 * 
 	 * @param  task			The task that should be processed.
 	 * @param  manager		The task processor will report back status to the manager.
 	 */
-	async execute(task: LongTask, manager: LongTaskManager): void
+	tick(task: LongTask, manager: LongTaskManager): Promise <void>
 }

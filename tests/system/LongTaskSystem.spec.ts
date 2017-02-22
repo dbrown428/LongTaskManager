@@ -16,7 +16,7 @@ import {DownloadMediaProcessorConfiguration} from "../doubles/DownloadMediaProce
 import {LongTaskStatusChangeValidator} from "../../src/Domain/LongTaskStatusChangeValidator";
 import {LongTaskRepositoryArray} from "../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
 
-describe.only("Long Task System", () => {
+describe("Long Task System", () => {
 
 	it("should process multiple tasks concurrently up to maximum.", async () => {
 		// Add sample task processor(s)
@@ -24,25 +24,26 @@ describe.only("Long Task System", () => {
 		const registry = new LongTaskRegistryImp;
 		registry.add(downloadMediaProcessorConfig);
 		const manager: LongTaskManager = configureManagerWithConcurrencyOf(registry, 2);
+		const ownerId = new UserId("123");
 
 		const p1 = await addSampleDownloadTaskToManager([
 			"http://amazing-space.stsci.edu/uploads/resource_image/image/204/hs-2013-51-a-full_jpg.jpg",
 			"http://farm8.staticflickr.com/7315/11920653765_8dbd136b17_o.jpg",
 			"http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_1mb.mp4",
-		], downloadMediaProcessorConfig, manager);
+		], ownerId, downloadMediaProcessorConfig, manager);
 
 		const p2 = await addSampleDownloadTaskToManager([
 			"http://cdn.spacetelescope.org/archives/images/publicationjpg/heic1502a.jpg",
 			"http://cdn.spacetelescope.org/archives/images/large/opo0324a.jpg",
 			"http://c2.staticflickr.com/8/7151/6760135001_14c59a1490_o.jpg",
-		], downloadMediaProcessorConfig, manager);
+		], ownerId, downloadMediaProcessorConfig, manager);
 
 		const p3 = await addSampleDownloadTaskToManager([
 			"http://www.nasa.gov/sites/default/files/thumbnails/image/hs-2015-02-a-hires_jpg.jpg",
 			"http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_20mb.mp4",
-		], downloadMediaProcessorConfig, manager);
+		], ownerId, downloadMediaProcessorConfig, manager);
 
-		const tasks = await manager.getTasksForUserId(userId);
+		const tasks = await manager.getTasksForUserId(ownerId);
 		assert.lengthOf(tasks, 3);
 
 		await Promise.all([p1, p2, p3]);
@@ -50,7 +51,8 @@ describe.only("Long Task System", () => {
 		console.log("Started long task manager");
 		await delay(Duration.withMilliseconds(100));
 		
-		assert.equal(manager.processingCount(), 2);
+		const processingTasks = await manager.getTasksCurrentlyProcessing();
+		assert.lengthOf(processingTasks, 2);
 
 		// Many of these files could take a few seconds each.
 		// Replace files with dummies, so we aren't using up someone elses bandwidth.
@@ -59,13 +61,15 @@ describe.only("Long Task System", () => {
 		// add a timeout... if not done in 2000 ms, then fail this test. Default chai/mocha behaviour?
 		// todo
 
-		while (true) {
-			const count = manager.processingCount();
 
-			if (count == 0) {
-				break;
-			}
-		}
+
+		// while (true) {
+		// 	const count = manager.processingCount();
+
+		// 	if (count == 0) {
+		// 		break;
+		// 	}
+		// }
 
 		// check the results.
 		// todo
@@ -73,9 +77,9 @@ describe.only("Long Task System", () => {
 	});
 
 	async function delay(duration: Duration): Promise <void> {
-		return new Promise((resolve, reject) => {
+		return new Promise <void> ((resolve, reject) => {
 			setTimeout(() => {
-				resolve(),
+				resolve();
 			}, duration.inMilliseconds());
 		});
 	}
@@ -96,13 +100,12 @@ describe.only("Long Task System", () => {
 		return manager;
 	}
 
-	async function addSampleDownloadTaskToManager(items: Array <string>, config: LongTaskProcessorConfiguration, manager: LongTaskManager): Promise <void> {
+	async function addSampleDownloadTaskToManager(items: Array <string>, userId: UserId, config: LongTaskProcessorConfiguration, manager: LongTaskManager): Promise <void> {
 		const taskType = config.key();
-		const ownerId = new UserId("123");
-		const searchKey: string = ownerId.value;
+		const searchKey: string = userId.value;
 		const params = DownloadMediaParameters.withItems(items);
 		
-		await manager.addTask(taskType, params, ownerId, searchKey)
+		await manager.addTask(taskType, params, userId, searchKey)
 		console.log("Added sample task");
 		return Promise.resolve();
 	}

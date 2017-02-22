@@ -7,7 +7,7 @@ import {LongTaskStatus, LongTaskAttributes} from "../../../src/Domain/LongTaskAt
 
 describe("Long Task", () => {
 	it("should be unclaimed for empty claim values", () => {
-		const identifier = new LongTaskId("5");
+		const identifier = LongTaskId.withValue("5");
 		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(
 			"sweet-task", 
 			"{students:[1,2,3]}",
@@ -21,7 +21,7 @@ describe("Long Task", () => {
 	});
 
 	it("should be claimed for a set claim value", () => {
-		const identifier = new LongTaskId("5");
+		const identifier = LongTaskId.withValue("5");
 		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(
 			"sweet-task", 
 			"{students:[1,2,3]}",
@@ -35,7 +35,7 @@ describe("Long Task", () => {
 	});
 
 	it("should be immutable", () => {
-		const identifier = new LongTaskId("5");
+		const identifier = LongTaskId.withValue("5");
 		const type = "sweet-task";
 		const params = "{students:[1,2,3, 4]}";
 		const status = LongTaskStatus.Processing;
@@ -55,7 +55,7 @@ describe("Long Task", () => {
 	});
 
 	it("should be easy to get the status", () => {
-		const identifier = new LongTaskId("5");
+		const identifier = LongTaskId.withValue("5");
 		const attributes = LongTaskAttributes.withTypeParamsStatusProgressClaim(
 			"sweet-task", 
 			"{students:[1,2,3]}",

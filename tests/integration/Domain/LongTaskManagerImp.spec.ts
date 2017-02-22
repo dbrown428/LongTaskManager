@@ -1,5 +1,4 @@
 import {assert} from "chai";
-import {Promise} from "es6-promise";
 import {UserId} from "../../../src/Shared/Values/UserId";
 import {LongTaskId} from "../../../src/Domain/LongTaskId";
 import {LoggerSpy} from "../../../src/Shared/Log/LoggerSpy";
@@ -21,40 +20,105 @@ import {PackageFilesProcessorConfigurationDummy} from "../../doubles/PackageFile
 import {ReportGeneratorProcessorConfigurationDummy} from "../../doubles/ReportGeneratorProcessorConfigurationDummy";
 
 describe("Long task manager", () => {
-	describe("add task", () => {
-		it("should reset the backoff.", () => {
+	describe("Add task", () => {
+		it("should throw an exception if task type is added that is not registered with the system.", async () => {
 			const logger = new LoggerSpy;
 			const backoff = new BackoffSpy;
-			const tracker = new LongTaskTrackerArray;	// dummy??
+			const tracker = new LongTaskTrackerArray;
 			const processors = new LongTaskRegistryImp;
-			const repository = new LongTaskRepositorySpy;
+			const type = LongTaskType.withValue("awesome-task");
+			const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+			const repository = new LongTaskRepositoryArray(validator);
 			const config = new LongTaskSettingsDevelopment;
 			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
-
-			const type = new LongTaskType("awesome-task");
 			const params = LongTaskParametersDummy.withJson("{key:value}");
 			const ownerId = new UserId("321");
 			const searchKey = "hello";
 
-			return manager.addTask(type, params, ownerId, searchKey)
-				.then((taskId: LongTaskId) => {
-					assert.equal(1, backoff.resetCount());
-					assert.isNotNull(taskId.value);
-				});
+			try {
+				await manager.addTask(type, params, ownerId, searchKey);
+			} catch (error) {
+				assert.isNotNull(error);
+			}
 		});
 
-		it("should throw an exception if an invalid task type is added.");
-		it("should not process tasks unless the system has been started.");
+		it("should add a task that has a registered type.", async () => {
+			const logger = new LoggerSpy;
+			const backoff = new BackoffSpy;
+			const tracker = new LongTaskTrackerArray;
+
+			const processorDummy = new ReportGeneratorProcessorConfigurationDummy;
+			const type = processorDummy.key();
+			const processors = new LongTaskRegistryImp;
+			processors.add(processorDummy);
+
+			const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+			const repository = new LongTaskRepositoryArray(validator);
+			const config = new LongTaskSettingsDevelopment;
+			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+			const params = LongTaskParametersDummy.withJson("{key:value}");
+			const ownerId = new UserId("321");
+			const searchKey = "hello";
+			const taskId = await manager.addTask(type, params, ownerId, searchKey);
+			const tasks = await manager.getTasksForUserId(ownerId);
+
+			assert.lengthOf(tasks, 1);
+		});
 	});
 
-	// verify when we claim a task it's added to the processing list.
-	// todo
-	describe("Claim Task", () => {
-		it("should change the processing count when a task is claimed,");
+	describe("System", () => {
+		it("should not process tasks until the system has been started.", async () => {
+			const logger = new LoggerSpy;
+			const backoff = new BackoffSpy;
+			const tracker = new LongTaskTrackerArray;
+
+			const processorDummy = new ReportGeneratorProcessorConfigurationDummy;
+			const type = processorDummy.key();
+			const processors = new LongTaskRegistryImp;
+			processors.add(processorDummy);
+
+			const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+			const repository = new LongTaskRepositoryArray(validator);
+			const config = new LongTaskSettingsDevelopment;
+			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+			const params = LongTaskParametersDummy.withJson("{key:value}");
+			const ownerId = new UserId("321");
+			const searchKey = "hello";
+			const taskId = await manager.addTask(type, params, ownerId, searchKey);
+			const processingTasks = await manager.getTasksCurrentlyProcessing();
+
+			assert.lengthOf(processingTasks, 0);
+		});
+
+		it("should begin processing long tasks when it is started.", async () => {
+			const logger = new LoggerSpy;
+			const backoff = new BackoffSpy;
+			const tracker = new LongTaskTrackerArray;
+
+			const processorDummy = new ReportGeneratorProcessorConfigurationDummy;
+			const type = processorDummy.key();
+			const processors = new LongTaskRegistryImp;
+			processors.add(processorDummy);
+
+			const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+			const repository = new LongTaskRepositoryArray(validator);
+			const config = new LongTaskSettingsDevelopment;
+			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+			const params = LongTaskParametersDummy.withJson("{key:value}");
+			const ownerId = new UserId("321");
+			const searchKey = "hello";
+			const taskId = await manager.addTask(type, params, ownerId, searchKey);
+			manager.start();
+
+			// await delay(Duration.withMilliseconds(10));
+
+			const processingTasks = await manager.getTasksCurrentlyProcessing();
+			assert.lengthOf(processingTasks, 1);
+		});
 	});
 
-	describe("Complete Task", () => {
-		it("Should be removed from processing when completed.", () => {
+	describe("Completed task", () => {
+		it("should be removed from processing when completed.", async () => {
 			const logger = new LoggerSpy;
 			const backoff = new BackoffSpy;
 			const tracker = new LongTaskTrackerArray;
@@ -64,33 +128,24 @@ describe("Long task manager", () => {
 			const config = new LongTaskSettingsDevelopment;
 			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
 
-			const type: LongTaskType = {type: "awesome-task"};
+			const type = LongTaskType.withValue("awesome-task");
 			const params = "{key:value}";
 			const ownerId = new UserId("321");
 			const searchKey = "hello";
 
-			// async await.
+			// probably need to redo this... as all of these will fail because the task types are not registered.
+			const values: Array <LongTaskId> = await Promise.all([
+				repository.add(LongTaskType.withValue("awesome-task"), LongTaskParametersDummy.withJson("{key: value}"), new UserId("123"), "hello"),
+				repository.add(LongTaskType.withValue("great-task"), LongTaskParametersDummy.withJson("{students: [1,2,3,4]"), new UserId("324"), "4"),
+				repository.add(LongTaskType.withValue("ok-task"), LongTaskParametersDummy.withJson("{teacher: 5}"), new UserId("802"), "grande"),
+			]);
+		
+			// start.
+			// delay - eek
+			// const processingTasks = await manager.getTasksCurrentlyProcessing();
+			// expecting 0
 
-			return Promise.all([
-				repository.add(new LongTaskType("awesome-task"), LongTaskParametersDummy.withJson("{key: value}"), new UserId("123"), "hello"),
-				repository.add(new LongTaskType("great-task"), LongTaskParametersDummy.withJson("{students: [1,2,3,4]"), new UserId("324"), "4"),
-				repository.add(new LongTaskType("ok-task"), LongTaskParametersDummy.withJson("{teacher: 5}"), new UserId("802"), "grande"),
-				])
-				.then((values: Array <LongTaskId>) => {
-					const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("completed: [1,2], failed: []", 10, 15);
-
-					return Promise.all([
-						repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
-						repository.claim(values[1], LongTaskClaim.withNowTimestamp()),
-						manager.completedTask(values[1], progress),
-					]);
-				})
-				.then(() => {
-					assert.equal(2, tracker.count());
-					// verify the processing count.
-					// assert processing count.
-					// does it really matter?
-				});
+			assert.isTrue(false);
 		});
 
 		it("Should handle an unexpected completed task error.");
