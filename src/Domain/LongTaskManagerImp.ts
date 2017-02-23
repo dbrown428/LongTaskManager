@@ -4,7 +4,6 @@ import {Logger} from "../Shared/Log/Logger";
 import {LongTaskType} from "./LongTaskType";
 import {LongTaskClaim} from "./LongTaskClaim";
 import {UserId} from "../Shared/Values/UserId";
-import {Option} from "../Shared/Values/Option";
 import {LongTaskTracker} from "./LongTaskTracker";
 import {Backoff} from "../Shared/Backoff/Backoff";
 import {LongTaskManager} from "./LongTaskManager";

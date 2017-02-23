@@ -1,5 +1,5 @@
 import {assert} from "chai";
-import {Delayable} from "../../doubles/Delayable";
+import {Delay} from "../../doubles/Delay";
 import {UserId} from "../../../src/Shared/Values/UserId";
 import {LongTaskId} from "../../../src/Domain/LongTaskId";
 import {LoggerSpy} from "../../../src/Shared/Log/LoggerSpy";
@@ -13,8 +13,10 @@ import {BackoffDummy} from "../../../src/Shared/Backoff/BackoffDummy";
 import {LongTaskRegistry} from "../../../src/Domain/LongTaskRegistry";
 import {LongTaskProgress} from "../../../src/Domain/LongTaskProgress";
 import {LoggerSuppress} from "../../../src/Shared/Log/LoggerSuppress";
+import {LongTaskManagerImpSpy} from "../../doubles/LongTaskManagerImpSpy";
 import {LongTaskManagerImp} from "../../../src/Domain/LongTaskManagerImp";
 import {LongTaskRegistryImp} from "../../../src/Domain/LongTaskRegistryImp";
+import {MultipleItemsParameters} from "../../doubles/MultipleItemsParameters";
 import {LongTaskParametersDummy} from "../../doubles/LongTaskParametersDummy";
 import {LongTaskTrackerArray} from "../../../src/Domain/LongTaskTrackerArray";
 import {DownloadMediaParameters} from "../../doubles/DownloadMediaParameters";
@@ -28,6 +30,7 @@ import {DownloadMediaProcessorConfiguration} from "../../doubles/DownloadMediaPr
 import {LongTaskTypeUnregisteredException} from "../../../src/Domain/LongTaskTypeUnregisteredException";
 import {LongTaskRepositoryArray} from "../../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
 import {DelayedResultsProcessorConfiguration} from "../../doubles/DelayedResultsProcessorConfiguration";
+import {MultipleItemsProcessorConfiguration} from "../../doubles/MultipleItemsProcessorConfiguration";
 
 describe("Long task manager", () => {
 	it("should throw an exception if task is added that is not registered with the system.", async () => {
@@ -52,15 +55,14 @@ describe("Long task manager", () => {
 	});
 
 	it("should add a task that has a registered type.", async () => {
-		const logger = new LoggerSpy;
-		const backoff = new BackoffSpy;
-		const tracker = new LongTaskTrackerArray;
-
 		const processorDummy = new LongTaskProcessorConfigurationDummy;
 		const type = processorDummy.key();
 		const processors = new LongTaskRegistryImp;
 		processors.add(processorDummy);
 
+		const logger = new LoggerSpy;
+		const backoff = new BackoffSpy;
+		const tracker = new LongTaskTrackerArray;
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
@@ -75,15 +77,14 @@ describe("Long task manager", () => {
 	});
 	
 	it("should not process tasks until the system has been started.", async () => {
-		const logger = new LoggerSpy;
-		const backoff = new BackoffSpy;
-		const tracker = new LongTaskTrackerArray;
-
 		const processorDummy = new LongTaskProcessorConfigurationDummy;
 		const type = processorDummy.key();
 		const processors = new LongTaskRegistryImp;
 		processors.add(processorDummy);
 
+		const logger = new LoggerSpy;
+		const backoff = new BackoffSpy;
+		const tracker = new LongTaskTrackerArray;
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
@@ -98,15 +99,15 @@ describe("Long task manager", () => {
 	});
 
 	it("should begin processing long tasks when the system starts.", async () => {
-		const logger = new LoggerSuppress;
-		const backoff = new BackoffSpy;
-		const tracker = new LongTaskTrackerArray;
 		const delay = Duration.withMilliseconds(20);
 		const delayedResultsProcessorConfig = new DelayedResultsProcessorConfiguration(delay);
 		const type = delayedResultsProcessorConfig.key();
 		const processorsRegistry = new LongTaskRegistryImp;
 		processorsRegistry.add(delayedResultsProcessorConfig);
 
+		const logger = new LoggerSuppress;
+		const backoff = new BackoffSpy;
+		const tracker = new LongTaskTrackerArray;
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const settings = new LongTaskSettingsDevelopment;
@@ -115,20 +116,37 @@ describe("Long task manager", () => {
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
-		
 		const taskId = await manager.addTask(type, params, ownerId, searchKey);
 		manager.start();
 
-		await Delayable.delay(Duration.withMilliseconds(3));
+		await Delay.for(Duration.withMilliseconds(3));
 		const processingTasks = await manager.getTasksCurrentlyProcessing();
 		assert.lengthOf(processingTasks, 1);
 	});
 
 	it("should process a task with a list of items in multiple ticks.", async () => {
-		// add just one task with multiple items.
-		// expecting, several progress updates.
-		// todo
-		assert.isTrue(false);
+		const multipleItemsPerTaskProcessorConfig = new MultipleItemsProcessorConfiguration();
+		const type = multipleItemsPerTaskProcessorConfig.key();
+		const processorsRegistry = new LongTaskRegistryImp;
+		processorsRegistry.add(multipleItemsPerTaskProcessorConfig);
+
+		const logger = new LoggerSuppress;
+		const backoff = new BackoffSpy;
+		const tracker = new LongTaskTrackerArray;
+		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+		const repository = new LongTaskRepositoryArray(validator);
+		const settings = new LongTaskSettingsDevelopment;
+		const manager = new LongTaskManagerImpSpy(logger, backoff, settings, tracker, repository, processorsRegistry);
+
+		const params = MultipleItemsParameters.withSampleItems([1, 2, 3, 4, 5]);
+		const ownerId = UserId.withValue("321");
+		const searchKey = "hello";
+		const taskId = await manager.addTask(type, params, ownerId, searchKey);
+		manager.start();
+
+		await Delay.for(Duration.withMilliseconds(20));
+		assert.equal(manager.updateTaskProgressCount(), 5);
+		assert.equal(manager.completedTaskCount(), 1);
 	});
 
 	it("should process multiple tasks concurrently up to maximum.", async () => {
@@ -159,7 +177,7 @@ describe("Long task manager", () => {
 
 		const taskIds: Array <LongTaskId> = await Promise.all([p1, p2, p3]);
 		manager.start();
-		await Delayable.delay(Duration.withMilliseconds(2));
+		await Delay.for(Duration.withMilliseconds(2));
 
 		const tasks = await repository.getTasksWithIds(taskIds);
 		assert.isTrue(tasks[0].isProcessing());

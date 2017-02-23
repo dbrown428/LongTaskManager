@@ -1,6 +1,5 @@
 import {Promise} from 'es6-promise';
 import {LongTask} from "../../Domain/LongTask";
-import {Option} from "../../Shared/Values/Option";
 import {UserId} from "../../Shared/Values/UserId";
 import {LongTaskId} from "../../Domain/LongTaskId";
 import {Duration} from "../../Shared/Values/Duration";

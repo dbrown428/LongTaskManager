@@ -1,6 +1,5 @@
 import {assert} from "chai";
 import {LongTask} from "../../../../src/Domain/LongTask";
-import {Option} from "../../../../src/Shared/Values/Option";
 import {UserId} from "../../../../src/Shared/Values/UserId";
 import {LongTaskId} from "../../../../src/Domain/LongTaskId";
 import {Duration} from "../../../../src/Shared/Values/Duration";
