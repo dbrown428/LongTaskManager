@@ -21,9 +21,9 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			const type = LongTaskType.withValue("awesome-job");
-			const ownerId = new UserId("4");
+			const ownerId = UserId.withValue("4");
 			const searchKey = "8";
-			const params = LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId:5}");
+			const params = new LongTaskParametersDummy;
 			const taskId: LongTaskId = await repository.add(type, params, ownerId, searchKey);
 			const nextTasks = await repository.getNextQueuedTasks(1);
 
@@ -44,11 +44,11 @@ describe("Long task repository array implementation", () => {
 		it("Should return the first of many queued tasks.", async () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
-			const ownerId = new UserId("6");
+			const ownerId = UserId.withValue("6");
 			const values: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), ownerId, "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), ownerId, "1"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), ownerId, "2"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, ownerId, "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, ownerId, "1"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, ownerId, "2"),
 			]);
 
 			const nextTasks = await repository.getNextQueuedTasks(1);
@@ -62,10 +62,10 @@ describe("Long task repository array implementation", () => {
 			const repository = new LongTaskRepositoryArray(validator);
 
 			const values: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
-				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), new UserId("6"), "10"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
+				repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, UserId.withValue("6"), "10"),
 			]);
 			await Promise.all([
 				repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
@@ -82,10 +82,10 @@ describe("Long task repository array implementation", () => {
 			const repository = new LongTaskRepositoryArray(validator);
 
 			const values: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
-				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), new UserId("6"), "10"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
+				repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, UserId.withValue("6"), "10"),
 			]);
 			await Promise.all([
 				repository.claim(values[0], LongTaskClaim.withNowTimestamp()),
@@ -103,7 +103,7 @@ describe("Long task repository array implementation", () => {
 		it("Should be able to claim an unclaimed task.", async () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
-			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId:9}"), new UserId("5"), "3");
+			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("5"), "3");
 			
 			const claimId = LongTaskClaim.withNowTimestamp();
 			await repository.claim(taskId, claimId);
@@ -116,7 +116,7 @@ describe("Long task repository array implementation", () => {
 		it("Should not be able to claim an already claimed task.", async () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
-			const taskId = await repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId:9}"), new UserId("11"), "9")
+			const taskId = await repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("11"), "9")
 			const values = await Promise.all([
 				repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
 				repository.claim(taskId, LongTaskClaim.withNowTimestamp()),
@@ -129,7 +129,7 @@ describe("Long task repository array implementation", () => {
 		it("Should be able to release a claimed task.", async () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
-			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{teacherId: 2, classroomId:8}"), new UserId("3"), "happy");	
+			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, UserId.withValue("3"), "happy");	
 			
 			await repository.claim(taskId, LongTaskClaim.withNowTimestamp());
 			await repository.release(taskId);
@@ -147,7 +147,7 @@ describe("Long task repository array implementation", () => {
 			const status = LongTaskStatus.Processing;
 			const progress = LongTaskProgress.withStateCurrentStepAndMaximumSteps("{successful-student-ids:[1,2],failed-student-ids:[3], failure-message:['Missing student.']}", 4, 5);
 
-			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("fun-job"), LongTaskParametersDummy.withJson("{teacher:2, students:[1,2,3,4,5]}"), new UserId("6"), "9");
+			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("fun-job"), new LongTaskParametersDummy, UserId.withValue("6"), "9");
 			await repository.claim(taskId, LongTaskClaim.withNowTimestamp());
 			await repository.update(taskId, progress, status);
 			const tasks = await repository.getTasksWithIds([taskId]);
@@ -163,8 +163,8 @@ describe("Long task repository array implementation", () => {
 		it("should cancel a task.", async () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
-			const userId = new UserId("11");
-			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId:9}"), userId, "9");
+			const userId = UserId.withValue("11");
+			const taskId: LongTaskId = await repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, userId, "9");
 
 			await repository.cancel(taskId);
 			const tasks = await repository.getTasksWithIds([taskId]);
@@ -179,9 +179,9 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			const taskIds: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
 			]);
 
 			await repository.delete(taskIds[0]);
@@ -195,9 +195,9 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			const taskIds: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
 			]);
 
 			await repository.delete(taskIds[0]);
@@ -222,9 +222,9 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			const sampleTaskIds = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
 			]);
 
 			const retrieveIds = [sampleTaskIds[0], sampleTaskIds[2]];
@@ -239,9 +239,9 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			const sampleTaskIds = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
 			]);
 
 			const retrieveIds = [sampleTaskIds[0], sampleTaskIds[2], LongTaskId.withValue("123"), LongTaskId.withValue("456")];
@@ -258,10 +258,10 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
-				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), new UserId("6"), "10"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
+				repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, UserId.withValue("6"), "10"),
 			]);
 			
 			const tasks: Array <LongTask> = await repository.getTasksForSearchKey("hello");
@@ -273,10 +273,10 @@ describe("Long task repository array implementation", () => {
 			const repository = new LongTaskRepositoryArray(validator);
 			const key = "hello";
 			const values: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), key),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), key),
-				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), new UserId("6"), ["10", key]),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), key),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), key),
+				repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, UserId.withValue("6"), ["10", key]),
 			]);
 
 			const tasks: Array <LongTask> = await repository.getTasksForSearchKey(key);
@@ -289,26 +289,26 @@ describe("Long task repository array implementation", () => {
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			const values: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), new UserId("1"), "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
-				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), new UserId("6"), "10"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, UserId.withValue("1"), "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
+				repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, UserId.withValue("6"), "10"),
 			])
 			
-			const tasks: Array <LongTask> = await repository.getTasksForUserId(new UserId("456"));
+			const tasks: Array <LongTask> = await repository.getTasksForUserId(UserId.withValue("456"));
 			assert.lengthOf(tasks, 0);
 		});
 
 		it("should return an array of tasks when, one or more, tasks were created by the specified user id.", async () => {
-			const userId = new UserId("456");
+			const userId = UserId.withValue("456");
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 
 			const values: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), userId, "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
-				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), userId, "10"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, userId, "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
+				repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, userId, "10"),
 			]);
 
 			const tasks: Array <LongTask> = await repository.getTasksForUserId(userId);
@@ -319,14 +319,14 @@ describe("Long task repository array implementation", () => {
 	// remove...
 	describe("Tasks older than duration", () => {
 		it("should retrieve processing tasks that have a expired.", async() => {
-			const userId = new UserId("456");
+			const userId = UserId.withValue("456");
 			const validator = new LongTaskStatusChangeValidator;
 			const repository = new LongTaskRepositoryArray(validator);
 			const taskIds: Array <LongTaskId> = await Promise.all([
-				repository.add(LongTaskType.withValue("great-job"), LongTaskParametersDummy.withJson("{teacherId:3, classroomId: 9}"), new UserId("2"), "9"),
-				repository.add(LongTaskType.withValue("fabulous-job"), LongTaskParametersDummy.withJson("{students:[3,2,1], classroomId: 10}"), userId, "3"),
-				repository.add(LongTaskType.withValue("awesome-job"), LongTaskParametersDummy.withJson("{students:[1,2,3,4], reportId: 1}"), new UserId("4"), "1"),
-				repository.add(LongTaskType.withValue("sweet-job"), LongTaskParametersDummy.withJson("{students:[9,10], teacher: 7}"), userId, "10"),
+				repository.add(LongTaskType.withValue("great-job"), new LongTaskParametersDummy, UserId.withValue("2"), "9"),
+				repository.add(LongTaskType.withValue("fabulous-job"), new LongTaskParametersDummy, userId, "3"),
+				repository.add(LongTaskType.withValue("awesome-job"), new LongTaskParametersDummy, UserId.withValue("4"), "1"),
+				repository.add(LongTaskType.withValue("sweet-job"), new LongTaskParametersDummy, userId, "10"),
 			]);
 			const date = new Date();
 			const oldDate = Date.now() - 4000;

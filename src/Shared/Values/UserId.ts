@@ -1,3 +1,7 @@
 export class UserId {
-	constructor(readonly value: string) {}
+	public static withValue(value: string): UserId {
+		return new UserId(value);
+	}
+	
+	private constructor(readonly value: string) {}
 }

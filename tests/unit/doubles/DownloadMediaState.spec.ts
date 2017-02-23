@@ -43,42 +43,6 @@ describe("Download Media State", () => {
 	it("should count the failed and success items.", () => {
 		const inputJson = '{"success":["hello","world"],"failed":["nothing"]}';
 		const state = DownloadMediaState.withJson(inputJson);
-		assert.equal(state.count(), 3);
-	});
-
-	it("should diff an empty array against another empty array and result in an empty array.", () => {
-		const state = DownloadMediaState.withJson(null);
-		const result = state.diff([]);
-		assert.lengthOf(result, 0);
-	});
-
-	it("should diff an empty array against a full array and result in an empty array.", () => {
-		const inputJson = '{"success":["hello","world"],"failed":["nothing"]}';
-		const state = DownloadMediaState.withJson(inputJson);
-		const result = state.diff([]);
-		assert.lengthOf(result, 0);
-	});
-
-	it("should diff a full array against an empty array and result in full array.", () => {
-		const state = DownloadMediaState.withJson(null);
-		const result = state.diff(["hello", "world", "nothing"]);
-		assert.lengthOf(result, 3);
-	});
-
-	it("should diff the same arrays and result in an empty array.", () => {
-		const inputJson = '{"success":["hello","world"],"failed":["nothing"]}';
-		const state = DownloadMediaState.withJson(inputJson);
-		const result = state.diff(["hello", "world", "nothing"]);
-		assert.lengthOf(result, 0);
-	});
-
-	it("should diff mixed arrays", () => {
-		const inputJson = '{"success":["world"],"failed":["nothing"]}';
-		const state = DownloadMediaState.withJson(inputJson);
-		const result = state.diff(["great", "nothing", "happy", "world", "hello"]);		
-		assert.lengthOf(result, 3);
-		assert.equal(result[0], "great");
-		assert.equal(result[1], "happy");
-		assert.equal(result[2], "hello");
+		assert.equal(state.processedCount(), 3);
 	});
 });

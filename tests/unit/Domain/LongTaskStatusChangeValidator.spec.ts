@@ -172,12 +172,12 @@ describe("Long task status change validator", () => {
 	});
 
 	describe("Current status is Processing", () => {
-		it("should fail validation when changing the status to queued.", () => {
+		it("should pass validation when changing the status to queued.", () => {
 			const currentStatus = LongTaskStatus.Processing;
 			const newStatus = LongTaskStatus.Queued;
 			const validator = new LongTaskStatusChangeValidator;
 			const valid = validator.isValidStatusUpdate(currentStatus, newStatus);
-			assert.isFalse(valid);
+			assert.isTrue(valid);
 		});
 
 		it("should pass validation when changing status to processing", () => {
@@ -228,7 +228,7 @@ describe("Long task status change validator", () => {
 
 		it("should have a message when validation fails.", () => {
 			const validator = new LongTaskStatusChangeValidator;
-			const valid = validator.isValidStatusUpdate(LongTaskStatus.Processing, LongTaskStatus.Queued);
+			const valid = validator.isValidStatusUpdate(LongTaskStatus.Queued, LongTaskStatus.Failed);
 			assert.isFalse(valid);
 			assert.notEqual("", validator.failureMessage());
 		});

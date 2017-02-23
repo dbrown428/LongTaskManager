@@ -5,7 +5,6 @@ interface Dictionary <T> {
 }
 
 export class DownloadMediaState implements LongTaskState {
-	private processed: Array <string>;
 	private success: Array <string>;
 	private failed: Array <string>;
 	// failure reasons. or should that be in the same array.
@@ -27,12 +26,8 @@ export class DownloadMediaState implements LongTaskState {
 		this.failed.push(item);
 	}
 
-	public count(): number {
-		return this.processed.length;
-	}
-
-	public diff(items: Array <string>): Array <string> {
-		return items.filter(item => this.processed.indexOf(item) < 0);
+	public processedCount(): number {
+		return this.success.length + this.failed.length;
 	}
 
 	public static withJson(json: string | null): DownloadMediaState {
@@ -52,6 +47,5 @@ export class DownloadMediaState implements LongTaskState {
 	private constructor(success: Array <string>, failed: Array <string>) {
 		this.success = success;
 		this.failed = failed;
-		this.processed = success.concat(failed);
 	}
 }

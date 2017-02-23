@@ -18,20 +18,12 @@ export interface LongTaskState {
 	 * Add an item to the failed state.
 	 * @param item	
 	 */
-	addToFailed(item: string, reason: string): void;	// should this be here?
+	addToFailed(item: string, reason: string): void;
 
 	/**
-	 * The total number of successful and failed items.
+	 * The total number of successful and failed items processed.
 	 * 
-	 * @return {number} [description]
+	 * @return count
 	 */
-	count(): number;
-
-	/**
-	 * Diff the remaining items based on the success and failed items.
-	 * 
-	 * @param  {Array <string>} items [description]
-	 * @return {Array <string>}       [description]
-	 */
-	diff(items: Array <string>): Array <string>;
+	processedCount(): number;
 }

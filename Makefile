@@ -6,6 +6,9 @@ default: ;@echo "Building ${PROJECT}"; \
 clean: ;@echo "Cleaning ${PROJECT}"; \
 	rm -fr build;
 
+demo: ;echo "Running ${PROJET} demo"; \
+	tsc "tests/demo.ts"
+
 test: ;@echo "Testing ${PROJECT}"; \
 	node_modules/.bin/mocha --compilers ts:ts-node/register,tsx:ts-node/register --recursive -R dot "tests/**/*.spec.ts"
 

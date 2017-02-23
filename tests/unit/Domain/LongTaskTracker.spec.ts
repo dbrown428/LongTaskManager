@@ -43,7 +43,7 @@ describe("Long Task Tracker", () => {
 		const result = tracker.list();
 		assert.lengthOf(result, 3);
 		assert.equal(result[0].value, 5);
-		assert.equal(result[0].value, 10);
-		assert.equal(result[0].value, 1);
+		assert.equal(result[1].value, 10);
+		assert.equal(result[2].value, 1);
 	});
 });

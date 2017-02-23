@@ -97,7 +97,14 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 	}
 
 	public claim(taskId: LongTaskId, claimId: LongTaskClaim): Promise <boolean> {
-		const index = this.indexForTaskId(taskId);
+		let index;
+
+		try {
+			index = this.indexForTaskId(taskId);
+		} catch (error) {
+			return Promise.resolve(false);
+		}
+
 		const row: DataRow = this.table[index];
 
 		if (this.isClaimed(row)) {

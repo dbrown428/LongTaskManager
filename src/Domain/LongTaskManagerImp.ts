@@ -42,13 +42,13 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	private bootSystem(): void {
 		this.started = true;
-		this.scheduleCleanup();
+		// this.scheduleCleanup();
 		this.processTasks();
 		this.logger.info("The long task system has been started.");
 	}
 
 	private scheduleCleanup(): void {
-		setTimeout(this.cleanup, this.settings.cleanupDelay.inMilliseconds());
+		setTimeout(() => this.cleanup(), this.settings.cleanupDelay.inMilliseconds());
 	}
 
 	private cleanup(): void {
@@ -77,20 +77,14 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private processTasks(): void {
-		this.logger.info(" = " + this.processing.count() + " tasks with backoff " + this.backoff.delay() + "ms")
-
-		// update to Ryan's suggestion... TODO
-		// see Async/Await notes.
-
+		this.logger.info(" = " + this.processing.count() + " tasks with backoff " + this.backoff.delay() + "ms");
+		
 	    if (this.canProcessMoreTasks()) {
-	    	this.logger.info("Can process more tasks");
-	    	
-	    	// Retrieve up to settings.maximumConcurrency tasks at a time.
-	    	// or (settings.maximumConcurrency - processing.count)
-
-	    	this.processNextTask();
+	     	this.logger.info("Can process more tasks");
+	 		// process as many as concurrency spaces available. TODO
+	     	this.processNextTask();
 	    } else {
-	    	this.backoff.increase();
+	     	this.backoff.increase();
 	    }
 
 	    // Do we want to wait until the task has been added to processing or errors-out before scheduling another run?
@@ -111,6 +105,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 		} else {
 			this.backoff.increase();
 		}
+
+		return Promise.resolve();
 	}
 
 	private async process(task: LongTask): Promise <void> {
@@ -130,7 +126,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 		const processor = this.taskProcessors.processorForKey(key);
 
 		setImmediate((processor, task, taskManager) => {
-			processor.execute(task, taskManager);
+			processor.tick(task, taskManager);
 		}, processor, task, taskManager);
 	}
 
@@ -140,9 +136,9 @@ export class LongTaskManagerImp implements LongTaskManager {
 				// review...
 				// this should really check if an existing timer has been set already.
 				// TODO
-		        const timeoutHandle = setTimeout(this.processTasks, this.backoff.delay());
+		        const timeoutHandle = setTimeout(() => this.processTasks(), this.backoff.delay());
 		    } else {
-		        setImmediate(this.processTasks);
+		        setImmediate(() => this.processTasks());
 		    }
 		} else {
 			this.logger.warn("The task manager has not been started on this system.");
@@ -152,21 +148,21 @@ export class LongTaskManagerImp implements LongTaskManager {
 	public async addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		if ( ! this.taskProcessors.contains(taskType.value)) {
 			throw new LongTaskTypeUnregisteredException("The specified long task type (" + taskType.value + ") is not registered with the system.");
-			// throw TypeError("The specified long task type is not registered with the system.");
 		}
 
 		const taskId = await this.repository.add(taskType, params, ownerId, searchKey);
 		this.backoff.reset();
 		this.scheduleProcessTasks();
-		return Promise.resolve(taskId);
+		return taskId;
 	}
 
 	public async updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
-		const status = LongTaskStatus.Processing;
-
 		try {
+			// we release each task after an update, so other tasks can work.
+			const status = LongTaskStatus.Queued;
 			await this.repository.update(taskId, progress, status);
-			await this.repository.release(taskId);
+			await this.repository.release(taskId);	// ^^^ perhaps expand the update method to include a claim field ??
+			this.processing.remove(taskId);
 		} catch (error) {
 			this.processing.remove(taskId);
 			throw error;
@@ -198,8 +194,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 	public async getTasksCurrentlyProcessing(): Promise <Array <LongTask>> {
 		const taskIds = this.processing.list();
 		const tasks = await this.repository.getTasksWithIds(taskIds);
-
-		return Promise.resolve(tasks);
+		return tasks;
 	}
 
 	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {

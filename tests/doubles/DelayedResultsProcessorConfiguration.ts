@@ -5,10 +5,14 @@ import {LongTaskProcessor} from "../../src/Domain/LongTaskProcessor";
 import {LongTaskProcessorConfiguration} from "../../src/Domain/LongTaskProcessorConfiguration";
 
 export class DelayedResultsProcessorConfiguration implements LongTaskProcessorConfiguration {
-	private duration: Duration;
+	readonly duration: Duration;
 
-	constructor() {
-		this.duration = Duration.withMilliseconds(100);
+	constructor(value?: Duration) {
+		if (value) {
+			this.duration = value;
+		} else {
+			this.duration = Duration.withMilliseconds(100);
+		}
 	}
 
 	public key(): LongTaskType {
@@ -17,9 +21,5 @@ export class DelayedResultsProcessorConfiguration implements LongTaskProcessorCo
 
 	public default(): LongTaskProcessor {
 		return new DelayedResultsProcessor(this.duration);
-	}
-
-	public setDelay(duration: Duration): void {
-		this.duration = duration;
 	}
 }

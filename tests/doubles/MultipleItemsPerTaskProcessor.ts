@@ -1,14 +1,15 @@
-import {Delayable} from "./Delayable";
 import {LongTask} from "../../src/Domain/LongTask";
-import {Duration} from "../../src/Shared/Values/Duration";
 import {LongTaskManager} from "../../src/Domain/LongTaskManager";
 import {LongTaskProcessor} from "../../src/Domain/LongTaskProcessor";
 
-export class DelayedResultsProcessor implements LongTaskProcessor {
-	constructor(private duration: Duration) {}
-
+export class MultipleItemsPerTaskProcessor implements LongTaskProcessor {
 	public async tick(task: LongTask, manager: LongTaskManager): Promise <void> {
-		await Delayable.delay(this.duration);
+		
+		// get task state
+		// get next item to process.
+		// write back progress to the manager.
+		// done
+
 		return Promise.resolve();
 	}
 }

@@ -24,16 +24,16 @@ export interface LongTaskRepository {
 
 	/**
 	 * Retrieve an array of tasks given an array of LongTaskId
-	 * 
-	 * @param  ids			The specified tasks to retrieve.
-	 * @return an array of tasks when the promise resolves.
+	 * @param  {Array <LongTaskId>} ids  The specified tasks to retrieve.
+	 * @return {Promise}                 an array of tasks when the promise resolves.
 	 */
 	getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>>;
 
 	/**
-	 * Retrieve the next task that is queued.
+	 * Retrieve the next queued tasks up to the specified count.
 	 * 
-	 * @return A task may or may not be defined.
+	 * @param  {number}  count the quantity of next tasks that should be retrieved.
+	 * @return {Promise}       an array of long tasks.
 	 */
 	getNextQueuedTasks(count: number): Promise <Array <LongTask>>;
 
@@ -70,8 +70,6 @@ export interface LongTaskRepository {
 	 * @param  taskId   The task the system wants to claim.
 	 * @param  claimId	Expecting the claim identifier.
 	 * @return Promise resolves true when task is claimed, false otherwise.
-	 *
-	 * @throws RangeError 	If the taskId is not found.
 	 */
 	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean>;
 
@@ -99,7 +97,7 @@ export interface LongTaskRepository {
 	 * @throws Error 		If you attempt to change the status in an invalid way. The natural 
 	 *         				flow is: Queued > Processing > Completed | Failed. Alternate status flows are:
 	 *             			Queued > Cancelled, Failed > Queued. Anything outside of these flows will result
-	 *                		in an exception being thrown.
+	 *                		in an exception being thrown. Processing > Queued is now valid. REDO.
 	 */
 	update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void>;
 	

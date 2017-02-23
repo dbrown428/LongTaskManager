@@ -7,77 +7,51 @@ import {Duration} from "../../../src/Shared/Values/Duration";
 import {LongTaskType} from "../../../src/Domain/LongTaskType";
 import {LongTaskClaim} from "../../../src/Domain/LongTaskClaim";
 import {BackoffSpy} from "../../../src/Shared/Backoff/BackoffSpy";
+import {LongTaskManager} from "../../../src/Domain/LongTaskManager";
 import {LoggerConsole} from "../../../src/Shared/Log/LoggerConsole";
 import {BackoffDummy} from "../../../src/Shared/Backoff/BackoffDummy";
-
 import {LongTaskRegistry} from "../../../src/Domain/LongTaskRegistry";
-import {LongTaskManager} from "../../../src/Domain/LongTaskManager";
-import {DownloadMediaParameters} from "../../doubles/DownloadMediaParameters";
-import {BaseTwoExponentialBackoff} from "../../../src/Shared/Backoff/BaseTwoExponentialBackoff";
-import {DownloadMediaProcessorConfiguration} from "../../doubles/DownloadMediaProcessorConfiguration";
-import {LongTaskProcessorConfiguration} from "../../../src/Domain/LongTaskProcessorConfiguration";
-
-
 import {LongTaskProgress} from "../../../src/Domain/LongTaskProgress";
+import {LoggerSuppress} from "../../../src/Shared/Log/LoggerSuppress";
 import {LongTaskManagerImp} from "../../../src/Domain/LongTaskManagerImp";
 import {LongTaskRegistryImp} from "../../../src/Domain/LongTaskRegistryImp";
 import {LongTaskParametersDummy} from "../../doubles/LongTaskParametersDummy";
 import {LongTaskTrackerArray} from "../../../src/Domain/LongTaskTrackerArray";
+import {DownloadMediaParameters} from "../../doubles/DownloadMediaParameters";
 import {LongTaskSettingsDevelopment} from "../../../src/App/LongTaskSettingsDevelopment";
 import {LongTaskStatusChangeValidator} from "../../../src/Domain/LongTaskStatusChangeValidator";
+import {BaseTwoExponentialBackoff} from "../../../src/Shared/Backoff/BaseTwoExponentialBackoff";
+import {LongTaskProcessorConfiguration} from "../../../src/Domain/LongTaskProcessorConfiguration";
 import {LongTaskRepositorySpy} from "../../../src/Infrastructure/Persistence/LongTaskRepositorySpy";
 import {LongTaskProcessorConfigurationDummy} from "../../doubles/LongTaskProcessorConfigurationDummy";
+import {DownloadMediaProcessorConfiguration} from "../../doubles/DownloadMediaProcessorConfiguration";
+import {LongTaskTypeUnregisteredException} from "../../../src/Domain/LongTaskTypeUnregisteredException";
 import {LongTaskRepositoryArray} from "../../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
 import {DelayedResultsProcessorConfiguration} from "../../doubles/DelayedResultsProcessorConfiguration";
 
-describe ("Long task manager", () => {
-	describe ("Add task", () => {
-		it ("should throw an exception if task type is added that is not registered with the system.", async () => {
-			const logger = new LoggerSpy;
-			const backoff = new BackoffSpy;
-			const tracker = new LongTaskTrackerArray;
-			const processors = new LongTaskRegistryImp;
-			const type = LongTaskType.withValue("awesome-task");
-			const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
-			const repository = new LongTaskRepositoryArray(validator);
-			const config = new LongTaskSettingsDevelopment;
-			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
-			const params = LongTaskParametersDummy.withJson("{key:value}");
-			const ownerId = new UserId("321");
-			const searchKey = "hello";
+describe("Long task manager", () => {
+	it("should throw an exception if task is added that is not registered with the system.", async () => {
+		const logger = new LoggerSpy;
+		const backoff = new BackoffSpy;
+		const tracker = new LongTaskTrackerArray;
+		const processors = new LongTaskRegistryImp;
+		const type = LongTaskType.withValue("awesome-task");
+		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+		const repository = new LongTaskRepositoryArray(validator);
+		const config = new LongTaskSettingsDevelopment;
+		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+		const params = new LongTaskParametersDummy;
+		const ownerId = UserId.withValue("321");
+		const searchKey = "hello";
 
-			try {
-				await manager.addTask(type, params, ownerId, searchKey);
-			} catch (error) {
-				assert.isNotNull(error);
-			}
-		});
-
-		it ("should add a task that has a registered type.", async () => {
-			const logger = new LoggerSpy;
-			const backoff = new BackoffSpy;
-			const tracker = new LongTaskTrackerArray;
-
-			const processorDummy = new LongTaskProcessorConfigurationDummy;
-			const type = processorDummy.key();
-			const processors = new LongTaskRegistryImp;
-			processors.add(processorDummy);
-
-			const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
-			const repository = new LongTaskRepositoryArray(validator);
-			const config = new LongTaskSettingsDevelopment;
-			const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
-			const params = LongTaskParametersDummy.withJson("{key:value}");
-			const ownerId = new UserId("321");
-			const searchKey = "hello";
-			const taskId = await manager.addTask(type, params, ownerId, searchKey);
-			const tasks = await manager.getTasksForUserId(ownerId);
-
-			assert.lengthOf(tasks, 1);
-		});
+		try {
+			await manager.addTask(type, params, ownerId, searchKey);
+		} catch (error) {
+			assert.instanceOf(error, LongTaskTypeUnregisteredException);
+		}
 	});
-	
-	it ("should not process tasks until the system has been started.", async () => {
+
+	it("should add a task that has a registered type.", async () => {
 		const logger = new LoggerSpy;
 		const backoff = new BackoffSpy;
 		const tracker = new LongTaskTrackerArray;
@@ -91,8 +65,31 @@ describe ("Long task manager", () => {
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
 		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
-		const params = LongTaskParametersDummy.withJson("{key:value}");
-		const ownerId = new UserId("321");
+		const params = new LongTaskParametersDummy;
+		const ownerId = UserId.withValue("321");
+		const searchKey = "hello";
+		const taskId = await manager.addTask(type, params, ownerId, searchKey);
+		const tasks = await manager.getTasksForUserId(ownerId);
+
+		assert.lengthOf(tasks, 1);
+	});
+	
+	it("should not process tasks until the system has been started.", async () => {
+		const logger = new LoggerSpy;
+		const backoff = new BackoffSpy;
+		const tracker = new LongTaskTrackerArray;
+
+		const processorDummy = new LongTaskProcessorConfigurationDummy;
+		const type = processorDummy.key();
+		const processors = new LongTaskRegistryImp;
+		processors.add(processorDummy);
+
+		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+		const repository = new LongTaskRepositoryArray(validator);
+		const config = new LongTaskSettingsDevelopment;
+		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+		const params = new LongTaskParametersDummy;
+		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
 		const taskId = await manager.addTask(type, params, ownerId, searchKey);
 		const processingTasks = await manager.getTasksCurrentlyProcessing();
@@ -100,98 +97,49 @@ describe ("Long task manager", () => {
 		assert.lengthOf(processingTasks, 0);
 	});
 
-	it ("should begin processing long tasks when the system starts.", async () => {
-		const logger = new LoggerSpy;
+	it("should begin processing long tasks when the system starts.", async () => {
+		const logger = new LoggerSuppress;
 		const backoff = new BackoffSpy;
 		const tracker = new LongTaskTrackerArray;
-
-		const delayedResultsProcessorConfig = new DelayedResultsProcessorConfiguration();
-		delayedResultsProcessorConfig.setDelay(Duration.withMilliseconds(20));
-
+		const delay = Duration.withMilliseconds(20);
+		const delayedResultsProcessorConfig = new DelayedResultsProcessorConfiguration(delay);
 		const type = delayedResultsProcessorConfig.key();
-		const processors = new LongTaskRegistryImp;
-		processors.add(delayedResultsProcessorConfig);
+		const processorsRegistry = new LongTaskRegistryImp;
+		processorsRegistry.add(delayedResultsProcessorConfig);
 
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
-		const config = new LongTaskSettingsDevelopment;
-		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+		const settings = new LongTaskSettingsDevelopment;
+		const manager = new LongTaskManagerImp(logger, backoff, settings, tracker, repository, processorsRegistry);
 
-		const params = LongTaskParametersDummy.withJson("{key:value}");
-		const ownerId = new UserId("321");
+		const params = new LongTaskParametersDummy;
+		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
 		
 		const taskId = await manager.addTask(type, params, ownerId, searchKey);
 		manager.start();
-		await Delayable.delay(Duration.withMilliseconds(10));
 
+		await Delayable.delay(Duration.withMilliseconds(3));
 		const processingTasks = await manager.getTasksCurrentlyProcessing();
 		assert.lengthOf(processingTasks, 1);
 	});
 
-
-	it ("should process multiple tasks concurrently up to maximum.", async () => {
-		// Add sample task processor(s)
-		const downloadMediaProcessorConfig = new DownloadMediaProcessorConfiguration;
-		const registry = new LongTaskRegistryImp;
-		registry.add(downloadMediaProcessorConfig);
-		const manager: LongTaskManager = configureManagerWithConcurrencyOf(registry, 2);
-		const ownerId = new UserId("123");
-
-		const p1 = await addSampleDownloadTaskToManager([
-			"http://amazing-space.stsci.edu/uploads/resource_image/image/204/hs-2013-51-a-full_jpg.jpg",
-			"http://farm8.staticflickr.com/7315/11920653765_8dbd136b17_o.jpg",
-			"http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_1mb.mp4",
-		], ownerId, downloadMediaProcessorConfig, manager);
-
-		const p2 = await addSampleDownloadTaskToManager([
-			"http://cdn.spacetelescope.org/archives/images/publicationjpg/heic1502a.jpg",
-			"http://cdn.spacetelescope.org/archives/images/large/opo0324a.jpg",
-			"http://c2.staticflickr.com/8/7151/6760135001_14c59a1490_o.jpg",
-		], ownerId, downloadMediaProcessorConfig, manager);
-
-		const p3 = await addSampleDownloadTaskToManager([
-			"http://www.nasa.gov/sites/default/files/thumbnails/image/hs-2015-02-a-hires_jpg.jpg",
-			"http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_20mb.mp4",
-		], ownerId, downloadMediaProcessorConfig, manager);
-
-		const tasks = await manager.getTasksForUserId(ownerId);
-		assert.lengthOf(tasks, 3);
-
-		await Promise.all([p1, p2, p3]);
-		manager.start();
-		console.log("Started long task manager");
-		await Delayable.delay(Duration.withMilliseconds(100));
-		
-		const processingTasks = await manager.getTasksCurrentlyProcessing();
-		assert.lengthOf(processingTasks, 2);
-
-		// Many of these files could take a few seconds each.
-		// Replace files with dummies, so we aren't using up someone elses bandwidth.
+	it("should process a task with a list of items in multiple ticks.", async () => {
+		// add just one task with multiple items.
+		// expecting, several progress updates.
 		// todo
-
-		// add a timeout... if not done in 2000 ms, then fail this test. Default chai/mocha behaviour?
-		// todo
-
-
-
-		// while (true) {
-		// 	const count = manager.processingCount();
-
-		// 	if (count == 0) {
-		// 		break;
-		// 	}
-		// }
-
-		// check the results.
-		// todo
-
+		assert.isTrue(false);
 	});
 
-	function configureManagerWithConcurrencyOf(registry: LongTaskRegistry, concurrency: number): LongTaskManager {
-		const logger = new LoggerConsole;
+	it("should process multiple tasks concurrently up to maximum.", async () => {
+		const delay = Duration.withMilliseconds(20);
+		const delayedResultsProcessorConfig = new DelayedResultsProcessorConfiguration(delay);
+		const registry = new LongTaskRegistryImp;
+		registry.add(delayedResultsProcessorConfig);
 
+		const logger = new LoggerConsole;
 		// Set the concurrency... TODO
+		const concurrencyMaximum = 2;
 		// LongTaskSettingsTesting.withConcurrencyOf(2)
 		const settings = new LongTaskSettingsDevelopment;	// It would be better to set these values explicitly for tests.
 
@@ -200,64 +148,70 @@ describe ("Long task manager", () => {
 		const tracker = new LongTaskTrackerArray;
 		const backoff = BaseTwoExponentialBackoff.withMultiplierAndMaximum(settings.backoffStepTime, settings.backoffMaximumTime);
 		const manager = new LongTaskManagerImp(logger, backoff, settings, tracker, repository, registry);
-
-		return manager;
-	}
-
-	async function addSampleDownloadTaskToManager(items: Array <string>, userId: UserId, config: LongTaskProcessorConfiguration, manager: LongTaskManager): Promise <void> {
-		const taskType = config.key();
-		const searchKey: string = userId.value;
-		const params = DownloadMediaParameters.withItems(items);
 		
-		await manager.addTask(taskType, params, userId, searchKey)
-		console.log("Added sample task");
-		return Promise.resolve();
-	}
+		const type = delayedResultsProcessorConfig.key();
+		const params = new LongTaskParametersDummy;
+		const ownerId = UserId.withValue("123");
+		const searchKey = "hello world";
+		const p1 = await repository.add(type, params, ownerId, searchKey);
+		const p2 = await repository.add(type, params, ownerId, searchKey);
+		const p3 = await repository.add(type, params, ownerId, searchKey);
 
+		const taskIds: Array <LongTaskId> = await Promise.all([p1, p2, p3]);
+		manager.start();
+		await Delayable.delay(Duration.withMilliseconds(2));
 
-	it ("should remove completed tasks from processing.", async () => {
+		const tasks = await repository.getTasksWithIds(taskIds);
+		assert.isTrue(tasks[0].isProcessing());
+		assert.isTrue(tasks[1].isProcessing());
+		assert.isFalse(tasks[2].isProcessing());
+	});
+
+	it("should remove completed tasks from processing.", async () => {
 		const logger = new LoggerSpy;
 		const backoff = new BackoffSpy;
 		const tracker = new LongTaskTrackerArray;
 		const processors = new LongTaskRegistryImp;
-		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
+		const validator = new LongTaskStatusChangeValidator;
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
 		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
 
 		const type = LongTaskType.withValue("awesome-task");
 		const params = "{key:value}";
-		const ownerId = new UserId("321");
+		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
 
 		// probably need to redo this... as all of these will fail because the task types are not registered.
 		const values: Array <LongTaskId> = await Promise.all([
-			repository.add(LongTaskType.withValue("awesome-task"), LongTaskParametersDummy.withJson("{key: value}"), new UserId("123"), "hello"),
-			repository.add(LongTaskType.withValue("great-task"), LongTaskParametersDummy.withJson("{students: [1,2,3,4]"), new UserId("324"), "4"),
-			repository.add(LongTaskType.withValue("ok-task"), LongTaskParametersDummy.withJson("{teacher: 5}"), new UserId("802"), "grande"),
+			repository.add(LongTaskType.withValue("awesome-task"), new LongTaskParametersDummy, UserId.withValue("123"), "hello"),
+			repository.add(LongTaskType.withValue("great-task"), new LongTaskParametersDummy, UserId.withValue("324"), "4"),
+			repository.add(LongTaskType.withValue("ok-task"), new LongTaskParametersDummy, UserId.withValue("802"), "grande"),
 		]);
 	
-		// start.
-		// delay - eek
-		// const processingTasks = await manager.getTasksCurrentlyProcessing();
-		// expecting 0
+		// add a single task.
+		// update the state manually - should be completed state, but queued status.
+		// start the system
+		// delay
+		// check that the status has been updated to completed (repository).
+		// 
 
 		assert.isTrue(false);
 	});
 
-	it ("should handle an unexpected completed task error.");
-	it ("should update status to failed for a processing task.");
+	it("should handle an unexpected completed task error.");
+	it("should update status to failed for a processing task.");
 
-	describe ("cancel task", () => {
-		it ("should be remove from processing.");
-		it ("should no longer be available as a next queued task.");
-		it ("should handle an unexpected error");
+	describe("cancel task", () => {
+		it("should be remove from processing.");
+		it("should no longer be available as a next queued task.");
+		it("should handle an unexpected error");
 
 		// task cleanup ??
 	});
 
-	describe ("delete task", () => {
-		it ("should be removed from processing when deleted.");
+	describe("delete task", () => {
+		it("should be removed from processing when deleted.");
 		// associated cleanup ??
 	});
 	

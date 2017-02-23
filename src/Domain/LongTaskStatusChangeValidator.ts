@@ -24,8 +24,6 @@ export class LongTaskStatusChangeValidator {
 			return this.isValidFailedStatusChange(newStatus);
 		} else if (existingStatus == LongTaskStatus.Queued) {
 			return this.isValidQueuedStatusChange(newStatus);
-		} else if (existingStatus == LongTaskStatus.Processing) {
-			return this.isValidProcessingStatusChange(newStatus);
 		} else {
 			return true;
 		}
@@ -58,16 +56,6 @@ export class LongTaskStatusChangeValidator {
 
 		if ( ! valid) {
 			this.message = "You can only change a queued status to 'processing' or 'cancelled'.";
-		}
-
-		return valid;
-	}
-
-	private isValidProcessingStatusChange(newStatus: LongTaskStatus): boolean {
-		const valid = (newStatus != LongTaskStatus.Queued);
-
-		if ( ! valid) {
-			this.message = "You cannot change a processing task to queued.";
 		}
 
 		return valid;

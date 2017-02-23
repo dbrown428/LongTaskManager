@@ -2,14 +2,12 @@ import {LongTaskId} from "./LongTaskId";
 import {LongTaskStatus, LongTaskAttributes} from "./LongTaskAttributes";
 
 export class LongTask {
-	private attributes: LongTaskAttributes;
-
 	constructor(
 		readonly identifier: LongTaskId,
-		attributes: LongTaskAttributes
-	) {
-		this.attributes = attributes;
-	}
+		private attributes: LongTaskAttributes
+		// consider dropping the attributes, and just pulling in the needed items.
+		// too much data in attributes.
+	) {}
 
 	public isClaimed(): boolean {
 		return (this.attributes.claim !== null);

@@ -2,6 +2,7 @@ import {HttpClientSpy} from "./HttpClientSpy";
 import {LongTaskType} from "../../src/Domain/LongTaskType";
 import {ImageManipulatorDummy} from "./ImageManipulatorDummy";
 import {DownloadMediaProcessor} from "./DownloadMediaProcessor";
+import {LoggerConsole} from "../../src/Shared/Log/LoggerConsole";
 import {LongTaskProcessor} from "../../src/Domain/LongTaskProcessor";
 import {LongTaskProcessorConfiguration} from "../../src/Domain/LongTaskProcessorConfiguration";
 
@@ -11,8 +12,9 @@ export class DownloadMediaProcessorConfiguration implements LongTaskProcessorCon
 	}
 
 	public default(): LongTaskProcessor {
-		const httpClient = new HttpClientSpy;
+		const logger = new LoggerConsole;
+		const httpClient = new HttpClientSpy;	// review
 		const manipulator = new ImageManipulatorDummy;
-		return new DownloadMediaProcessor(httpClient, manipulator);
+		return new DownloadMediaProcessor(logger, httpClient, manipulator);
 	}
 }
