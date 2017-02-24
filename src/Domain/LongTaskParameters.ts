@@ -1,4 +1,6 @@
 export interface LongTaskParameters {
+	// split this into two: serialize/deserialize... make this a service. Not a value object.
+
 	/**
 	 * A JSON string of all the private values needed.
 	 * @return valid json
@@ -16,4 +18,6 @@ export interface LongTaskParameters {
 	 * @throws Error if invalid LongTaskParameters json; each implementation has it's own attributes.
 	 */
 	//static withJson(json: string): LongTaskParameters;
+
+
 }

@@ -4,6 +4,7 @@ import {Logger} from "../Shared/Log/Logger";
 import {LongTaskType} from "./LongTaskType";
 import {LongTaskClaim} from "./LongTaskClaim";
 import {UserId} from "../Shared/Values/UserId";
+import {Option} from "../Shared/Values/Option";
 import {LongTaskTracker} from "./LongTaskTracker";
 import {Backoff} from "../Shared/Backoff/Backoff";
 import {LongTaskManager} from "./LongTaskManager";
@@ -111,6 +112,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 	private async process(task: LongTask): Promise <void> {
 		this.logger.info(" + Attempting to claim task (" + task.identifier.value + ")");
 		const claimId = LongTaskClaim.withNowTimestamp();
+
+		// redo this... the claim is built into the "claimNextQueuedTasks";
 		const claimed = await this.repository.claim(task.identifier, claimId);
 		
 		if ( ! claimed)	{
@@ -125,7 +128,13 @@ export class LongTaskManagerImp implements LongTaskManager {
 		const processor = this.taskProcessors.processorForKey(key);
 
 		setImmediate((processor, task, taskManager) => {
-			processor.tick(task, taskManager);
+			const i:Progress = processor.tick(task);
+
+			if(i.isComplete()) {
+				// set complete in repostory
+			} else {
+				// update repo
+			}
 		}, processor, task, taskManager);
 	}
 
@@ -144,7 +153,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 		}
 	}
 
-	public async addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+	public async createTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		if ( ! this.taskProcessors.contains(taskType.value)) {
 			throw new LongTaskTypeUnregisteredException("The specified long task type (" + taskType.value + ") is not registered with the system.");
 		}

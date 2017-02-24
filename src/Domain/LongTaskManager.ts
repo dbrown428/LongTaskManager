@@ -11,8 +11,11 @@ export interface LongTaskManager {
 	 */
 	start(): void;
 
+	// forward to the registry.
+	register(type: LongTaskType, factory: LongTaskProcessorFactory): void;
+
 	/**
-	 * Add a long task to the system for processing.
+	 * Create a long task to the system for processing.
 	 * 
 	 * @param  taskType			The type of task to be run.
 	 * @param  params			Parameters needed to process the task.
@@ -22,7 +25,7 @@ export interface LongTaskManager {
 	 *
 	 * @throws LongTaskTypeUnregisteredException when the LongTaskType has not been registered with the system.
 	 */
-	addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
+	createTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
 	 * Update the task progress. Most tasks can be broken into logical steps,

@@ -20,6 +20,7 @@ export interface LongTaskRepository {
 	 * @param searchKey A string or array of strings that can be used for retrieving jobs.
 	 * @return LongTaskId
 	 */
+	// create
 	add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
@@ -35,7 +36,8 @@ export interface LongTaskRepository {
 	 * @param  {number}  count the quantity of next tasks that should be retrieved.
 	 * @return {Promise}       an array of long tasks.
 	 */
-	getNextQueuedTasks(count: number): Promise <Array <LongTask>>;
+	// name: string > some sort of identifier of who claimed them. eg. Manager instance name.
+	claimNextQueuedTasks(count: number): Promise <Array <LongTask>>;
 
 	/**
 	 * Retrieve all processing tasks with a claim older than the specified duration.
@@ -64,16 +66,6 @@ export interface LongTaskRepository {
 	getTasksForUserId(identifier: UserId): Promise <Array <LongTask>>;
 
 	/**
-	 * Claim a task for processing. Make sure the underlying implementation is 
-	 * concurrency safe.
-	 * 
-	 * @param  taskId   The task the system wants to claim.
-	 * @param  claimId	Expecting the claim identifier.
-	 * @return Promise resolves true when task is claimed, false otherwise.
-	 */
-	claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean>;
-
-	/**
 	 * Release (unclaim) a task so it can be picked up for processing again. When you
 	 * release a task you should nullify the claim_id and set the status to Queued.
 	 * 
@@ -83,6 +75,8 @@ export interface LongTaskRepository {
 	 * @throws RangeError 	If the taskId is not found.
 	 * @throws Error 		If the task is not claimed and you attempt to release it.
 	 */
+	
+	// remove this... this is baked into update.
 	release(taskId: LongTaskId): Promise <void>;
 
 	/**

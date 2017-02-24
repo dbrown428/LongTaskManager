@@ -217,6 +217,15 @@ describe("Long task manager", () => {
 		assert.isTrue(false);
 	});
 
+
+	it("should cleanup long running task.", () => {
+		// use DelayResultsProcessor -> set delay to be longer than settings.maximum run time.
+		assert.isTrue(false);
+	});
+
+
+
+
 	it("should handle an unexpected completed task error.");
 	it("should update status to failed for a processing task.");
 
