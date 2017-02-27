@@ -1,10 +1,14 @@
-import {LongTaskProcessor} from "./LongTaskProcessor";
-import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
+import {LongTask} from "./LongTask";
+import {LongTaskConfiguration} from "./LongTaskConfiguration";
 
 // THIS IS NO LONGER AN INTERFACE... just concrete implementation.
 export interface LongTaskRegistry {
-	keys(): Array <string>;	// review ... are keys() and contains() both needed
-	contains(key: string): boolean;	// review
-	processorForKey(key: string): LongTaskProcessor;	// this should instantiate a new processor.
-	register(configuration: LongTaskProcessorConfiguration): void;	// hold a reference to the configuration.
+	
+	contains(key: string): boolean;
+
+	// this should instantiate a new processor?? If new then we want to include the params too
+	longTaskForKey(key: string): LongTask;
+
+	// hold a reference to the configuration.
+	register(configuration: LongTaskConfiguration): void;
 }

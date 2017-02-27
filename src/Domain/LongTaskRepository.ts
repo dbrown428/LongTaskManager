@@ -1,5 +1,5 @@
 import {Promise} from 'es6-promise';
-import {LongTask} from "./LongTask";
+import {LongTaskInfo} from "./LongTaskInfo";
 import {LongTaskId} from "./LongTaskId";
 import {LongTaskType} from "./LongTaskType";
 import {LongTaskClaim} from "./LongTaskClaim";
@@ -20,34 +20,26 @@ export interface LongTaskRepository {
 	 * @param searchKey A string or array of strings that can be used for retrieving jobs.
 	 * @return LongTaskId
 	 */
-	// create
-	add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
+	create(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
 	 * Retrieve an array of tasks given an array of LongTaskId
 	 * @param  {Array <LongTaskId>} ids  The specified tasks to retrieve.
 	 * @return {Promise}                 an array of tasks when the promise resolves.
 	 */
-	getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>>;
+	getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTaskInfo>>;
 
 	/**
-	 * Retrieve the next queued tasks up to the specified count.
+	 * Retrieve the next tasks for processing up to the specified count. This has to resolve
+	 * concurrency. This will also retrieve at old/expired processing tasks and reclaim them.
 	 * 
-	 * @param  {number}  count the quantity of next tasks that should be retrieved.
-	 * @return {Promise}       an array of long tasks.
+	 * @param  {number}  	count 	The quantity of next tasks that should be retrieved.
+	 * @param  {string}  	name  	An identifier of who claimed them. eg. Manager instance name.
+	 * @param  {Duration} 	cleanup	If a task has been processing for longer than the specified duration,
+	 *                             	then it will be released and reclaimed.
+	 * @return {Promise}       		An array of long tasks.
 	 */
-	// name: string > some sort of identifier of who claimed them. eg. Manager instance name.
-	claimNextQueuedTasks(count: number): Promise <Array <LongTask>>;
-
-	/**
-	 * Retrieve all processing tasks with a claim older than the specified duration.
-	 * 
-	 * @param  duration		A duration from now into the past.
-	 * @param  date			The reference date-time.
-	 * @return Promise
-	 */
-	getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>>;
-	// REMOVE ^^^^
+	claimNextTasks(count: number, claimName: string, cleanup: Duration): Promise <Array <LongTaskInfo>>;
 
 	/**
 	 * Retrieve tasks that match the search key.
@@ -55,7 +47,7 @@ export interface LongTaskRepository {
 	 * @param  key		A search key to filter tasks with.
 	 * @return Promise
 	 */
-	getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTask>>;
+	getTasksForSearchKey(key: string | Array <string>): Promise <Array <LongTaskInfo>>;
 
 	/**
 	 * Retrieve tasks that match the userId.
@@ -63,21 +55,7 @@ export interface LongTaskRepository {
 	 * @param  identifier		A userId to filter tasks with.
 	 * @return Promise
 	 */
-	getTasksForUserId(identifier: UserId): Promise <Array <LongTask>>;
-
-	/**
-	 * Release (unclaim) a task so it can be picked up for processing again. When you
-	 * release a task you should nullify the claim_id and set the status to Queued.
-	 * 
-	 * @param  taskId		The task to be released.
-	 * @return Promise
-	 *
-	 * @throws RangeError 	If the taskId is not found.
-	 * @throws Error 		If the task is not claimed and you attempt to release it.
-	 */
-	
-	// remove this... this is baked into update.
-	release(taskId: LongTaskId): Promise <void>;
+	getTasksForUserId(identifier: UserId): Promise <Array <LongTaskInfo>>;
 
 	/**
 	 * Update the task with progress and status changes.
@@ -93,7 +71,10 @@ export interface LongTaskRepository {
 	 *             			Queued > Cancelled, Failed > Queued. Anything outside of these flows will result
 	 *                		in an exception being thrown. Processing > Queued is now valid. REDO.
 	 */
-	update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void>;
+	
+	// long task manager -> on lease expired, remove from pool.
+	// you tried to update something that has been claimed by someone else. 
+	update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <boolean>;	// enum: lease expired (given back to the pool), success
 	
 	/**
 	 * Cancel a long running task.

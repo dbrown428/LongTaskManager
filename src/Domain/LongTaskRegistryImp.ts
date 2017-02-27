@@ -1,53 +1,50 @@
 import {LongTaskRegistry} from "./LongTaskRegistry";
-import {LongTaskProcessor} from "./LongTaskProcessor";
-import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
+import {LongTask} from "./LongTask";
+import {LongTaskConfiguration} from "./LongTaskConfiguration";
 import {LongTaskRegistryDuplicateKeyException} from "./LongTaskRegistryDuplicateKeyException";
 import {LongTaskRegistryDuplicateProcessorException} from "./LongTaskRegistryDuplicateProcessorException";
 
-interface Dictionary <T> {
+interface DictionaryEntry <T> {
 	[K: string]: T;
 }
 
 export class LongTaskRegistryImp implements LongTaskRegistry {
-	private taskProcessors: Dictionary <LongTaskProcessor> = {};
-
-	public keys(): Array <string> {
-		return Object.keys(this.taskProcessors);
-	}
+	private tasks: Dictionary <LongTask> = {};
 
 	public contains(key: string): boolean {
-		const processor = this.taskProcessors[key];
-		return (processor != null);
+		const task = this.tasks[key];
+		return (task != null);
 	}
 
-	public processorForKey(key: string): LongTaskProcessor {
-		const processor = this.taskProcessors[key];
+	public longTaskForKey(key: string): LongTask {
+		const task = this.tasks[key];
 
-		if (processor == null) {
+		if (task == null) {
 			throw RangeError("The specified key does not exist.");
 		} else {
-			return processor;
+			return task;
 		}
 	}
 	
-	public add(configuration: LongTaskProcessorConfiguration): void {
+	// public add(key, factory)
+	public add(configuration: LongTaskConfiguration): void {
 		const key: string = configuration.key().value;
-		const processor: LongTaskProcessor = configuration.default();
+		const task: LongTask = configuration.default();
 
 		if (this.contains(key)) {
 			throw new LongTaskRegistryDuplicateKeyException("Each key must be unique.");
-		} else if (this.hasProcessor(processor)) {
-			throw new LongTaskRegistryDuplicateProcessorException("Each processor must be unique.");
+		} else if (this.has(task)) {
+			throw new LongTaskRegistryDuplicateProcessorException("Each task must be unique.");
 		}
 
-		this.taskProcessors[key] = processor;
+		this.tasks[key] = task;
 	}
 
-	private hasProcessor(processor: LongTaskProcessor): boolean {
-		for (var i in this.taskProcessors) {
-			const existingTaskProcessor = this.taskProcessors[i];
+	private has(task: LongTask): boolean {
+		for (var i in this.tasks) {
+			const existingTask = this.tasks[i];
 
-			if (processor.constructor.name == existingTaskProcessor.constructor.name) {
+			if (task.constructor.name == existingTask.constructor.name) {
 				return true;
 			}
 		}

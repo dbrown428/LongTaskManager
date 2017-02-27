@@ -1,5 +1,5 @@
 import {Promise} from 'es6-promise';
-import {LongTask} from "../../Domain/LongTask";
+import {LongTaskInfo} from "../../Domain/LongTaskInfo";
 import {UserId} from "../../Shared/Values/UserId";
 import {LongTaskId} from "../../Domain/LongTaskId";
 import {Duration} from "../../Shared/Values/Duration";
@@ -14,7 +14,7 @@ import {LongTaskStatusChangeValidator} from "../../Domain/LongTaskStatusChangeVa
 // Used to represent an entry in the array table.
 class DataRow {
 	constructor(
-		readonly identifier: string, 
+	readonly identifier: string, 
 		readonly ownerId: string,
 		readonly searchKey: Array <string>,
 		readonly type: string, 
@@ -23,6 +23,7 @@ class DataRow {
 		readonly progressState: string | null, 
 		readonly progressCurrentStep: number | null, 
 		readonly progressMaximumSteps: number | null, 
+		
 		readonly claimId: number | null
 		// claimCount... how many times has a task been claimed without progress being written to it?
 		// this will be helpful for tasks that are timing out.
@@ -40,7 +41,7 @@ export class LongTaskRepositoryArray implements LongTaskRepository {
 		this.index = [];
 	}
 
-	public add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+	public create(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		const taskType = type.value;
 		const jsonParams = params.toJson();
 		const identifier = this.newTaskIdentifier();

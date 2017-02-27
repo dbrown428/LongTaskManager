@@ -1,4 +1,5 @@
 import {Promise} from 'es6-promise';
+import {LongTaskInfo} from "./LongTaskInfo";
 import {LongTaskId} from "./LongTaskId";
 import {LongTaskType} from "./LongTaskType";
 import {UserId} from "../Shared/Values/UserId";
@@ -12,20 +13,8 @@ export interface LongTaskManager {
 	start(): void;
 
 	// forward to the registry.
-	register(type: LongTaskType, factory: LongTaskProcessorFactory): void;
+	// register(type: LongTaskType, factory: LongTaskFactory): void;
 
-	/**
-	 * Create a long task to the system for processing.
-	 * 
-	 * @param  taskType			The type of task to be run.
-	 * @param  params			Parameters needed to process the task.
-	 * @param  ownerId			The owner who requested the task be added.
-	 * @param  searchKey		Filter tasks based on this value.
-	 * @return the long task id when the promise is resolved.
-	 *
-	 * @throws LongTaskTypeUnregisteredException when the LongTaskType has not been registered with the system.
-	 */
-	createTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId>;
 
 	/**
 	 * Update the task progress. Most tasks can be broken into logical steps,
@@ -43,6 +32,7 @@ export interface LongTaskManager {
 	 * @throws
 	 */
 	updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
+	// REMOVE
 
 	/**
 	 * Mark a task as completed.
@@ -54,7 +44,8 @@ export interface LongTaskManager {
 	 * @throws
 	 */
 	completedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
-	
+	// REMOVE
+
 	/**
 	 * Mark a task as failed.
 	 * 
@@ -65,47 +56,12 @@ export interface LongTaskManager {
 	 * @throws
 	 */
 	failedTask(taskId: LongTaskId, progress: LongTaskProgress): Promise <void>;
-
-	/**
-	 * Cancel a queued or processing task.
-	 * 
-	 * @param  taskId		The specific task that should be cancelled.
-	 * @return promise
-	 *
-	 * @throws
-	 */
-	cancelTask(taskId: LongTaskId): Promise <void>;
-
-	/**
-	 * Delete a queued or processing task.
-	 * 
-	 * @param  taskId		The task that should be deleted.
-	 * @return promise
-	 *
-	 * @throws
-	 */
-	deleteTask(taskId: LongTaskId): Promise <void>;
+	// REMOVE
 
 	/**
 	 * Retrieve the tasks that are currently processing.
 	 * 
 	 * @return an array of tasks when the promise resolves.
 	 */
-	getTasksCurrentlyProcessing(): Promise <Array <LongTask>>;
-
-	/**
-	 * Retrieve all tasks that match the search key(s).
-	 * 
-	 * @param  searchKey	A string or array of strings to filter
-	 * @return an array of tasks when the promise resolves.
-	 */
-	getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>>;
-
-	/**
-	 * Retrieve all tasks that match the specified userId.
-	 * 
-	 * @param  userId		The userId to search for.
-	 * @return an array of tasks when the promise resolves.
-	 */
-	getTasksForUserId(userId: UserId): Promise <Array <LongTask>>;
+	getTasksCurrentlyProcessing(): Promise <Array <LongTaskInfo>>;
 }

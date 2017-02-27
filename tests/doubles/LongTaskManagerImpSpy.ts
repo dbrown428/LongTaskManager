@@ -1,4 +1,4 @@
-import {LongTask} from "../../src/Domain/LongTask";
+import {LongTaskInfo} from "../../src/Domain/LongTaskInfo";
 import {Logger} from "../../src/Shared/Log/Logger";
 import {UserId} from "../../src/Shared/Values/UserId";
 import {LongTaskId} from "../../src/Domain/LongTaskId";
@@ -15,7 +15,7 @@ import {LongTaskManagerImp} from "../../src/Domain/LongTaskManagerImp";
 
 export class LongTaskManagerImpSpy extends LongTaskManagerImp {
     private startCallCount: number;
-    private addTaskCallCount: number;
+    private createTaskCallCount: number;
     private updateTaskProgressCallCount: number;
     private completedTaskCallCount: number;
     private failedTaskCallCount: number;
@@ -36,7 +36,7 @@ export class LongTaskManagerImpSpy extends LongTaskManagerImp {
         super(logger, backoff, settings, processing, repository, taskProcessors);
         
         this.startCallCount = 0;
-        this.addTaskCallCount = 0;
+        this.createTaskCallCount = 0;
         this.updateTaskProgressCallCount = 0;
         this.completedTaskCallCount = 0;
         this.failedTaskCallCount = 0;
@@ -56,13 +56,13 @@ export class LongTaskManagerImpSpy extends LongTaskManagerImp {
         return this.startCallCount;
     }
 
-    public addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-        this.addTaskCallCount += 1;
-        return super.addTask(taskType, params, ownerId, searchKey);
+    public createTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+        this.createTaskCallCount += 1;
+        return super.createTask(taskType, params, ownerId, searchKey);
     }
 
-    public addTaskCount(): number {
-        return this.addTaskCallCount;
+    public createTaskCount(): number {
+        return this.createTaskCallCount;
     }
 
     public updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
@@ -110,7 +110,7 @@ export class LongTaskManagerImpSpy extends LongTaskManagerImp {
         return this.deleteTaskCallCount;
     }
 
-    public getTasksCurrentlyProcessing(): Promise <Array <LongTask>> {
+    public getTasksCurrentlyProcessing(): Promise <Array <LongTaskInfo>> {
         this.getTasksCurrentlyProcessingCallCount += 1;
         return super.getTasksCurrentlyProcessing();
     }
@@ -119,7 +119,7 @@ export class LongTaskManagerImpSpy extends LongTaskManagerImp {
         return this.getTasksCurrentlyProcessingCallCount;
     }
 
-    public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {
+    public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTaskInfo>> {
         this.getTasksForSearchKeyCallCount += 1;
         return super.getTasksForSearchKey(searchKey);
     }
@@ -128,7 +128,7 @@ export class LongTaskManagerImpSpy extends LongTaskManagerImp {
         return this.getTasksForSearchKeyCallCount;
     }
 
-    public getTasksForUserId(userId: UserId): Promise <Array <LongTask>> {
+    public getTasksForUserId(userId: UserId): Promise <Array <LongTaskInfo>> {
         this.getTasksForUserIdCallCount += 1;
         return super.getTasksForUserId(userId);
     }

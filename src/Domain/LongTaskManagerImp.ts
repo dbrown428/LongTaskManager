@@ -1,4 +1,4 @@
-import {LongTask} from "./LongTask";
+import {LongTaskInfo} from "./LongTaskInfo";
 import {LongTaskId} from "./LongTaskId";
 import {Logger} from "../Shared/Log/Logger";
 import {LongTaskType} from "./LongTaskType";
@@ -12,12 +12,13 @@ import {LongTaskRegistry} from "./LongTaskRegistry";
 import {LongTaskSettings} from "./LongTaskSettings";
 import {LongTaskStatus} from "./LongTaskAttributes";
 import {LongTaskProgress} from "./LongTaskProgress";
-import {LongTaskProcessor} from "./LongTaskProcessor";
+import {LongTask} from "./LongTask";
 import {LongTaskRepository} from "./LongTaskRepository";
 import {LongTaskParameters} from "./LongTaskParameters";
-import {LongTaskProcessorConfiguration} from "./LongTaskProcessorConfiguration";
+import {LongTaskConfiguration} from "./LongTaskConfiguration";
 import {LongTaskTypeUnregisteredException} from "./LongTaskTypeUnregisteredException";
 
+// LongTaskManagerDefault
 export class LongTaskManagerImp implements LongTaskManager {
 	private started: boolean;
 
@@ -42,38 +43,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	private bootSystem(): void {
 		this.started = true;
-		// this.scheduleCleanup();
 		this.processTasks();
 		this.logger.info("The long task system has been started.");
-	}
-
-	private scheduleCleanup(): void {
-		setTimeout(() => this.cleanup(), this.settings.cleanupDelay.inMilliseconds());
-	}
-
-	private cleanup(): void {
-		const duration = this.settings.processingTimeMaximum;
-		const date = new Date();
-
-		// REDO...
-		this.repository.getProcessingTasksWithClaimOlderThanDurationFromDate(duration, date).then((tasks: Array <LongTask>) => {
-
-			// we could check the type of task...
-			// - given history of this task type, it usually takes X time.
-			// - release this task, or let it continue running until next cleanup.
-
-
-			for (let task in tasks) {
-				
-				// this.repository.release(task.identifier).then((released: boolean) => {
-
-			}
-		}).catch((reason) => {
-			this.logger.error(reason);
-		});
-
-		// Or, should we wait until the cleanup finishes or fails?
-		this.scheduleCleanup();
 	}
 
 	private processTasks(): void {
@@ -81,7 +52,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 		
 	    if (this.canProcessMoreTasks()) {
 	     	this.logger.info("Can process more tasks");
-	 		// process as many as concurrency spaces available. TODO
+	 		// process as many as concurrency spaces available.
+	 		// TODO
 	     	this.processNextTask();
 	    } else {
 	     	this.backoff.increase();
@@ -109,11 +81,11 @@ export class LongTaskManagerImp implements LongTaskManager {
 		return Promise.resolve();
 	}
 
-	private async process(task: LongTask): Promise <void> {
+	private async process(task: LongTaskInfo): Promise <void> {
 		this.logger.info(" + Attempting to claim task (" + task.identifier.value + ")");
 		const claimId = LongTaskClaim.withNowTimestamp();
 
-		// redo this... the claim is built into the "claimNextQueuedTasks";
+		// redo this... the claim is built into the "claimNextTasks";
 		const claimed = await this.repository.claim(task.identifier, claimId);
 		
 		if ( ! claimed)	{
@@ -199,17 +171,17 @@ export class LongTaskManagerImp implements LongTaskManager {
 		this.processing.remove(taskId);
 	}
 
-	public async getTasksCurrentlyProcessing(): Promise <Array <LongTask>> {
+	public async getTasksCurrentlyProcessing(): Promise <Array <LongTaskInfo>> {
 		const taskIds = this.processing.list();
 		const tasks = await this.repository.getTasksWithIds(taskIds);
 		return tasks;
 	}
 
-	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {
+	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTaskInfo>> {
 		return this.repository.getTasksForSearchKey(searchKey);
 	}
 
-	public getTasksForUserId(userId: UserId): Promise <Array <LongTask>> {
+	public getTasksForUserId(userId: UserId): Promise <Array <LongTaskInfo>> {
 		return this.repository.getTasksForUserId(userId);
 	}
 }

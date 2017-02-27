@@ -1,4 +1,4 @@
-import {LongTask} from "../../src/Domain/LongTask";
+import {LongTaskInfo} from "../../src/Domain/LongTaskInfo";
 import {UserId} from "../../src/Shared/Values/UserId";
 import {LongTaskId} from "../../src/Domain/LongTaskId";
 import {LongTaskType} from "../../src/Domain/LongTaskType";
@@ -9,7 +9,7 @@ import {LongTaskParameters} from "../../src/Domain/LongTaskParameters";
 export class LongTaskManagerFailToUpdateProgressDummy implements LongTaskManager {
 	public start(): void {}
 
-	public addTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+	public createTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
 		return Promise.resolve(LongTaskId.withValue("123"));
 	}
 
@@ -33,15 +33,15 @@ export class LongTaskManagerFailToUpdateProgressDummy implements LongTaskManager
 		return Promise.resolve();
 	}
 
-	public getTasksCurrentlyProcessing(): Promise <Array <LongTask>> {
+	public getTasksCurrentlyProcessing(): Promise <Array <LongTaskInfo>> {
 		return Promise.resolve([]);
 	}
 
-	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTask>> {
+	public getTasksForSearchKey(searchKey: string | Array <string>): Promise <Array <LongTaskInfo>> {
 		return Promise.resolve([]);
 	}
 
-	public getTasksForUserId(userId: UserId): Promise <Array <LongTask>> {
+	public getTasksForUserId(userId: UserId): Promise <Array <LongTaskInfo>> {
 		return Promise.resolve([]);
 	}
 }

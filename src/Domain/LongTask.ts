@@ -1,55 +1,32 @@
-import {LongTaskId} from "./LongTaskId";
-import {LongTaskStatus, LongTaskAttributes} from "./LongTaskAttributes";
+import {LongTaskInfo} from "./LongTaskInfo";
+import {LongTaskManager} from "./LongTaskManager";
 
-export class LongTask {
-	constructor(
-		readonly identifier: LongTaskId,
-		private attributes: LongTaskAttributes
-		// consider dropping the attributes, and just pulling in the needed items.
-		// too much data in attributes.
-	) {}
+/**
+ * A task status moves through the following states: Queued > Processing (Claimed) > Completed | Failed
+ * The user can cancel a task at any time it is Queued or Processing.
+ * 
+ * It is your responsibility to define how you want your task to fail. For example, if you're processing 
+ * a list, should one item failure stop the entire task? Or should the failure be recorded and continue 
+ * processing the remaining items?
+ */
 
-	public isClaimed(): boolean {
-		return (this.attributes.claim !== null);
-	}
-
-	public type(): string {
-		return this.attributes.type;
-	}
-
-	public params(): string {
-		return this.attributes.params;
-	}
-
-	public isProcessing(): boolean {
-		return (this.attributes.status == LongTaskStatus.Processing);
-	}
-
-	public isCompleted(): boolean {
-		return (this.attributes.status == LongTaskStatus.Completed);
-	}
-
-	public isQueued(): boolean {
-		return (this.attributes.status == LongTaskStatus.Queued);
-	}
-
-	public isFailed(): boolean {
-		return (this.attributes.status == LongTaskStatus.Failed);
-	}
-
-	public isCancelled(): boolean {
-		return (this.attributes.status == LongTaskStatus.Cancelled);
-	}
+export interface LongTask {
+	/**
+	 * The LongTaskManager will call this method asyncronously. Most tasks can be broken 
+	 * into logical steps, and after each step or a batch of steps have completed you 
+	 * should return with progress. The system will requeue your long task 
+	 * after you report progress, so your task should terminate after you report progress.
+	 * 
+	 * Your long task should not attempt to execute the entire task in one run, but instead 
+	 * think of how many steps of this task can I safely get done in 200ms or less?
+	 *
+	 * When you're task has finished processing all steps, make sure to update the manager
+	 * with the completed progress.
+	 * 
+	 * @param  task			The task that should be processed.
+	 * @param  manager		The task processor will report back status to the manager.
+	 */
 	
-	public progressState(): string | null {
-		return this.attributes.progress.state;
-	}
-
-	public progressCurrentStep(): number | null {
-		return this.attributes.progress.currentStep;
-	}
-	
-	public progressMaximumSteps(): number | null {
-		return this.attributes.progress.maximumSteps;
-	}
+	// tick(task: LongTaskInfo): Promise <LongTaskProgress>
+	tick(task: LongTaskInfo, manager: LongTaskMangager): Promise <void>
 }

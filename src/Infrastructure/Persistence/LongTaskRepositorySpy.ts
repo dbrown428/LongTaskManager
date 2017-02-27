@@ -1,5 +1,5 @@
 import {Promise} from 'es6-promise';
-import {LongTask} from "../../Domain/LongTask";
+import {LongTaskInfo} from "../../Domain/LongTaskInfo";
 import {UserId} from "../../Shared/Values/UserId";
 import {Option} from "../../Shared/Values/Option";
 import {LongTaskId} from "../../Domain/LongTaskId";
@@ -14,7 +14,7 @@ import {LongTaskParameters} from "../../Domain/LongTaskParameters";
 export class LongTaskRepositorySpy implements LongTaskRepository {
 	private addCallCount: number;
 	private getTasksWithIdsCallCount: number;
-	private getNextQueuedTasksCallCount: number;
+	private claimNextTasksCallCount: number;
 	private getProcessingTasksCallCount: number;
 	private getTasksForSearchKeyCallCount: number;
 	private getTasksForUserIdCallCount: number;
@@ -25,9 +25,9 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 	private deleteCallCount: number;
 
 	constructor() {
-		this.addCallCount = 0;
+		this.createCallCount = 0;
 		this.getTasksWithIdsCallCount = 0;
-		this.getNextQueuedTasksCallCount = 0;
+		this.claimNextTasksCallCount = 0;
 		this.getProcessingTasksCallCount = 0;
 		this.getTasksForSearchKeyCallCount = 0;
 		this.getTasksForUserIdCallCount = 0;
@@ -38,17 +38,17 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 		this.deleteCallCount = 0;
 	}
 
-	public add(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
-		this.addCallCount += 1;
+	public create(type: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+		this.createCallCount += 1;
 		const taskId = LongTaskId.withValue("1234567890");			
 		return Promise.resolve(taskId);
 	}
 
-	public addCount(): number {
-		return this.addCallCount;
+	public createCount(): number {
+		return this.createCallCount;
 	}
 
-	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
+	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTaskInfo>> {
 		this.getTasksWithIdsCallCount += 1;
 		return Promise.resolve([]);
 	}
@@ -57,43 +57,33 @@ export class LongTaskRepositorySpy implements LongTaskRepository {
 		return this.getTasksWithIdsCallCount;
 	}
 
-	public getNextQueuedTasks(count: number): Promise <Array <LongTask>> {
-		this.getNextQueuedTasksCallCount += 1;
+	public claimNextTasks(count: number, claimName: string, cleanup: Duration): Promise <Array <LongTaskInfo>> {
+		this.claimNextTasksCallCount += 1;
 		return Promise.resolve([]);
 	}
 
-	public getNextQueuedTasksCount(): number {
+	public claimNextTasksCount(): number {
 		return this.getNextQueuedTasksCallCount;
 	}
 
-	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTask>> {
+	public getProcessingTasksWithClaimOlderThanDurationFromDate(duration: Duration, date: Date): Promise <Array <LongTaskInfo>> {
 		this.getProcessingTasksCallCount += 1;
 		return Promise.resolve([]);
 	}
 
-	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTask>> {
+	public getTasksWithIds(ids: Array <LongTaskId>): Promise <Array <LongTaskInfo>> {
 		this.getTasksWithIdsCallCount += 1;
 		return Promise.resolve([]);
 	}
 
-	public getTasksForSearchKey(key: string): Promise <Array <LongTask>> {
+	public getTasksForSearchKey(key: string): Promise <Array <LongTaskInfo>> {
 		this.getTasksForSearchKeyCallCount += 1;
 		return Promise.resolve([]);
 	}
 
-	public getTasksForUserId(identifier: UserId): Promise <Array <LongTask>> {
+	public getTasksForUserId(identifier: UserId): Promise <Array <LongTaskInfo>> {
 		this.getTasksForUserIdCallCount += 1;
 		return Promise.resolve([]);
-	}
-
-	public claim(taskId: LongTaskId, claim: LongTaskClaim): Promise <boolean> {
-		this.claimCallCount += 1;
-		return Promise.resolve(true);
-	}
-
-	public release(taskId: LongTaskId): Promise <void> {	
-		this.releaseCallCount += 1;
-		return Promise.resolve();
 	}
 
 	public update(taskId: LongTaskId, progress: LongTaskProgress, status: LongTaskStatus): Promise <void> {

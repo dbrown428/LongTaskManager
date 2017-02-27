@@ -5,7 +5,6 @@ import {LongTaskId} from "../../../src/Domain/LongTaskId";
 import {LoggerSpy} from "../../../src/Shared/Log/LoggerSpy";
 import {Duration} from "../../../src/Shared/Values/Duration";
 import {LongTaskType} from "../../../src/Domain/LongTaskType";
-import {LongTaskClaim} from "../../../src/Domain/LongTaskClaim";
 import {BackoffSpy} from "../../../src/Shared/Backoff/BackoffSpy";
 import {LongTaskManager} from "../../../src/Domain/LongTaskManager";
 import {LoggerConsole} from "../../../src/Shared/Log/LoggerConsole";
@@ -16,21 +15,19 @@ import {LoggerSuppress} from "../../../src/Shared/Log/LoggerSuppress";
 import {LongTaskManagerImpSpy} from "../../doubles/LongTaskManagerImpSpy";
 import {LongTaskManagerImp} from "../../../src/Domain/LongTaskManagerImp";
 import {LongTaskRegistryImp} from "../../../src/Domain/LongTaskRegistryImp";
-import {MultipleItemsParameters} from "../../doubles/MultipleItemsParameters";
+import {MultipleItemsLongTaskParameters} from "../../doubles/MultipleItemsLongTaskParameters";
 import {LongTaskParametersDummy} from "../../doubles/LongTaskParametersDummy";
 import {LongTaskTrackerArray} from "../../../src/Domain/LongTaskTrackerArray";
-import {DownloadMediaParameters} from "../../doubles/DownloadMediaParameters";
 import {LongTaskSettingsDevelopment} from "../../../src/App/LongTaskSettingsDevelopment";
 import {LongTaskStatusChangeValidator} from "../../../src/Domain/LongTaskStatusChangeValidator";
 import {BaseTwoExponentialBackoff} from "../../../src/Shared/Backoff/BaseTwoExponentialBackoff";
-import {LongTaskProcessorConfiguration} from "../../../src/Domain/LongTaskProcessorConfiguration";
+import {LongTaskConfiguration} from "../../../src/Domain/LongTaskConfiguration";
 import {LongTaskRepositorySpy} from "../../../src/Infrastructure/Persistence/LongTaskRepositorySpy";
-import {LongTaskProcessorConfigurationDummy} from "../../doubles/LongTaskProcessorConfigurationDummy";
-import {DownloadMediaProcessorConfiguration} from "../../doubles/DownloadMediaProcessorConfiguration";
+import {LongTaskConfigurationDummy} from "../../doubles/LongTaskConfigurationDummy";
 import {LongTaskTypeUnregisteredException} from "../../../src/Domain/LongTaskTypeUnregisteredException";
 import {LongTaskRepositoryArray} from "../../../src/Infrastructure/Persistence/LongTaskRepositoryArray";
-import {DelayedResultsProcessorConfiguration} from "../../doubles/DelayedResultsProcessorConfiguration";
-import {MultipleItemsProcessorConfiguration} from "../../doubles/MultipleItemsProcessorConfiguration";
+import {DelayedResultsLongTaskConfiguration} from "../../doubles/DelayedResultsLongTaskConfiguration";
+import {MultipleItemsLongTaskConfiguration} from "../../doubles/MultipleItemsLongTaskConfiguration";
 
 describe("Long task manager", () => {
 	it("should throw an exception if task is added that is not registered with the system.", async () => {
@@ -48,17 +45,17 @@ describe("Long task manager", () => {
 		const searchKey = "hello";
 
 		try {
-			await manager.addTask(type, params, ownerId, searchKey);
+			await manager.createTask(type, params, ownerId, searchKey);
 		} catch (error) {
 			assert.instanceOf(error, LongTaskTypeUnregisteredException);
 		}
 	});
 
 	it("should add a task that has a registered type.", async () => {
-		const processorDummy = new LongTaskProcessorConfigurationDummy;
-		const type = processorDummy.key();
-		const processors = new LongTaskRegistryImp;
-		processors.add(processorDummy);
+		const longTaskDummy = new LongTaskConfigurationDummy;
+		const type = longTaskDummy.key();
+		const longTasks = new LongTaskRegistryImp;
+		longTasks.add(longTaskDummy);
 
 		const logger = new LoggerSpy;
 		const backoff = new BackoffSpy;
@@ -70,14 +67,14 @@ describe("Long task manager", () => {
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
-		const taskId = await manager.addTask(type, params, ownerId, searchKey);
+		const taskId = await manager.createTask(type, params, ownerId, searchKey);
 		const tasks = await manager.getTasksForUserId(ownerId);
 
 		assert.lengthOf(tasks, 1);
 	});
 	
 	it("should not process tasks until the system has been started.", async () => {
-		const processorDummy = new LongTaskProcessorConfigurationDummy;
+		const processorDummy = new LongTaskConfigurationDummy;
 		const type = processorDummy.key();
 		const processors = new LongTaskRegistryImp;
 		processors.add(processorDummy);
@@ -92,7 +89,7 @@ describe("Long task manager", () => {
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
-		const taskId = await manager.addTask(type, params, ownerId, searchKey);
+		const taskId = await manager.createTask(type, params, ownerId, searchKey);
 		const processingTasks = await manager.getTasksCurrentlyProcessing();
 
 		assert.lengthOf(processingTasks, 0);
@@ -100,7 +97,7 @@ describe("Long task manager", () => {
 
 	it("should begin processing long tasks when the system starts.", async () => {
 		const delay = Duration.withMilliseconds(20);
-		const delayedResultsProcessorConfig = new DelayedResultsProcessorConfiguration(delay);
+		const delayedResultsProcessorConfig = new DelayedResultsLongTaskConfiguration(delay);
 		const type = delayedResultsProcessorConfig.key();
 		const processorsRegistry = new LongTaskRegistryImp;
 		processorsRegistry.add(delayedResultsProcessorConfig);
@@ -116,7 +113,7 @@ describe("Long task manager", () => {
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
-		const taskId = await manager.addTask(type, params, ownerId, searchKey);
+		const taskId = await manager.createTask(type, params, ownerId, searchKey);
 		manager.start();
 
 		await Delay.for(Duration.withMilliseconds(3));
@@ -125,7 +122,7 @@ describe("Long task manager", () => {
 	});
 
 	it("should process a task with a list of items in multiple ticks.", async () => {
-		const multipleItemsPerTaskProcessorConfig = new MultipleItemsProcessorConfiguration();
+		const multipleItemsPerTaskProcessorConfig = new MultipleItemsLongTaskConfiguration();
 		const type = multipleItemsPerTaskProcessorConfig.key();
 		const processorsRegistry = new LongTaskRegistryImp;
 		processorsRegistry.add(multipleItemsPerTaskProcessorConfig);
@@ -138,10 +135,10 @@ describe("Long task manager", () => {
 		const settings = new LongTaskSettingsDevelopment;
 		const manager = new LongTaskManagerImpSpy(logger, backoff, settings, tracker, repository, processorsRegistry);
 
-		const params = MultipleItemsParameters.withSampleItems([1, 2, 3, 4, 5]);
+		const params = MultipleItemsLongTaskParameters.withSampleItems([1, 2, 3, 4, 5]);
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
-		const taskId = await manager.addTask(type, params, ownerId, searchKey);
+		const taskId = await manager.createTask(type, params, ownerId, searchKey);
 		manager.start();
 
 		await Delay.for(Duration.withMilliseconds(20));
@@ -151,7 +148,7 @@ describe("Long task manager", () => {
 
 	it("should process multiple tasks concurrently up to maximum.", async () => {
 		const delay = Duration.withMilliseconds(20);
-		const delayedResultsProcessorConfig = new DelayedResultsProcessorConfiguration(delay);
+		const delayedResultsProcessorConfig = new DelayedResultsLongTaskConfiguration(delay);
 		const registry = new LongTaskRegistryImp;
 		registry.add(delayedResultsProcessorConfig);
 

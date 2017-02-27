@@ -9,6 +9,9 @@ export class LongTaskProgress {
 		readonly maximumSteps: number | null
 	) {}
 
+	// isCompleted?
+	// 
+
 	public static withStateCurrentStepAndMaximumSteps(state: string | null, currentStep: number | null, maximumSteps: number | null): LongTaskProgress {
 		return new LongTaskProgress(state, currentStep, maximumSteps);
 	}
