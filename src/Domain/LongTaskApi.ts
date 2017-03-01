@@ -1,3 +1,8 @@
+import {LongTaskType} from "./LongTaskType";
+import {LongTaskParameters} from "./LongTaskParameters";
+import {UserId} from "../Shared/Values/UserId";
+import {LongTaskId} from "./LongTaskId";
+import {LongTaskInfo} from "./LongTaskInfo";
 
 export interface LongTaskApi {
 	/**

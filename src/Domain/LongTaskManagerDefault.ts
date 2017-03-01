@@ -1,10 +1,9 @@
+import {Duration} from "../Shared/Values/Duration";
 import {LongTaskInfo} from "./LongTaskInfo";
 import {LongTaskId} from "./LongTaskId";
 import {Logger} from "../Shared/Log/Logger";
 import {LongTaskType} from "./LongTaskType";
-import {LongTaskClaim} from "./LongTaskClaim";
 import {UserId} from "../Shared/Values/UserId";
-import {Option} from "../Shared/Values/Option";
 import {LongTaskTracker} from "./LongTaskTracker";
 import {Backoff} from "../Shared/Backoff/Backoff";
 import {LongTaskManager} from "./LongTaskManager";
@@ -18,19 +17,27 @@ import {LongTaskParameters} from "./LongTaskParameters";
 import {LongTaskConfiguration} from "./LongTaskConfiguration";
 import {LongTaskTypeUnregisteredException} from "./LongTaskTypeUnregisteredException";
 
-// LongTaskManagerDefault
-export class LongTaskManagerImp implements LongTaskManager {
+export class LongTaskManagerDefault implements LongTaskApi, LongTaskManager {
 	private started: boolean;
+	// private taskProcessors: Array <>;
 
+	private name: string;
+	// 
+	// name of manager.
 	constructor(
 		private logger: Logger,
 		private backoff: Backoff,
 		private settings: LongTaskSettings,
 		private processing: LongTaskTracker,
-		private repository: LongTaskRepository,
-		private taskProcessors: LongTaskRegistry
+		private repository: LongTaskRepository
 	) {
 		this.started = false;
+		this.name = "uniqueNameFromConstructorTODO";
+		// this.taskProcessors = 
+	}
+
+	public register(type, longTaskInfo: (task: LongTaskInfo) => LongTask): void {
+		// key/value.
 	}
 
 	public start(): void {
@@ -48,51 +55,40 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	private processTasks(): void {
+
+		// redo with Ryan's notes...
 		this.logger.info(" = " + this.processing.count() + " tasks with backoff " + this.backoff.delay() + "ms");
-		
-	    if (this.canProcessMoreTasks()) {
+		const canProcessCount = this.canProcessorTaskCount();
+
+	    if (canProcessCount > 0) {
 	     	this.logger.info("Can process more tasks");
-	 		// process as many as concurrency spaces available.
-	 		// TODO
-	     	this.processNextTask();
+	     	this.process(canProcessCount);	// async. see ryan's notes on await.
 	    } else {
+			this.logger.info("Cannot process more tasks at this time.");
 	     	this.backoff.increase();
 	    }
 
+
+		// review...
 	    // Do we want to wait until the task has been added to processing or errors-out before scheduling another run?
-	    this.scheduleProcessTasks();
+	    // this.scheduleProcessTasks();
 	}
 
-	private canProcessMoreTasks(): boolean {
-	    return (this.processing.count() < this.settings.concurrencyMaximum);
+	private canProcessorTaskCount(): number {
+		return this.settings.concurrencyMaximum - this.processing.count();
 	}
 
-	private async processNextTask(): Promise <void> {
-		// change this to many... temp
-		const nextTasks = await this.repository.getNextQueuedTasks(1);
+	private async process(count: number): Promise <void> {
+		const claimName = this.name;
+		const cleanup = this.settings.cleanupThreshold;
+		const nextTasks = await this.repository.claimNextTasks(count, claimName, cleanup);
 
-		// TEMP -  update to multiple... incorporate the concurrency limit and currently processing. TODO
-		if (nextTasks.length > 0) {
-			await this.process(nextTasks[0]);
-		} else {
+		if (nextTasks.length < 1) {
 			this.backoff.increase();
+			return Promise.resolve();
 		}
 
-		return Promise.resolve();
-	}
-
-	private async process(task: LongTaskInfo): Promise <void> {
-		this.logger.info(" + Attempting to claim task (" + task.identifier.value + ")");
-		const claimId = LongTaskClaim.withNowTimestamp();
-
-		// redo this... the claim is built into the "claimNextTasks";
-		const claimed = await this.repository.claim(task.identifier, claimId);
-		
-		if ( ! claimed)	{
-			this.logger.info("The task (" + task.identifier.value + ") was already claimed.");
-			return;
-		}
-
+		// add all tasks to the processing dictionary. TODO
 		this.processing.add(task.identifier);
 
 		const taskManager = this;
@@ -100,7 +96,7 @@ export class LongTaskManagerImp implements LongTaskManager {
 		const processor = this.taskProcessors.processorForKey(key);
 
 		setImmediate((processor, task, taskManager) => {
-			const i:Progress = processor.tick(task);
+			// const i:Progress = processor.tick(task);
 
 			if(i.isComplete()) {
 				// set complete in repostory
@@ -108,6 +104,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 				// update repo
 			}
 		}, processor, task, taskManager);
+
+		return Promise.resolve();
 	}
 
 	private scheduleProcessTasks(): void {
@@ -126,11 +124,13 @@ export class LongTaskManagerImp implements LongTaskManager {
 	}
 
 	public async createTask(taskType: LongTaskType, params: LongTaskParameters, ownerId: UserId, searchKey: string | Array <string>): Promise <LongTaskId> {
+		
+		
 		if ( ! this.taskProcessors.contains(taskType.value)) {
 			throw new LongTaskTypeUnregisteredException("The specified long task type (" + taskType.value + ") is not registered with the system.");
 		}
 
-		const taskId = await this.repository.add(taskType, params, ownerId, searchKey);
+		const taskId = await this.repository.create(taskType, params, ownerId, searchKey);
 		this.backoff.reset();
 		this.scheduleProcessTasks();
 		return taskId;
@@ -138,11 +138,8 @@ export class LongTaskManagerImp implements LongTaskManager {
 
 	public async updateTaskProgress(taskId: LongTaskId, progress: LongTaskProgress): Promise <void> {
 		try {
-			// we release each task after an update, so other tasks can work.
-			const status = LongTaskStatus.Queued;
+			const status = LongTaskStatus.Processing;
 			await this.repository.update(taskId, progress, status);
-			await this.repository.release(taskId);	// ^^^ perhaps expand the update method to include a claim field ??
-			this.processing.remove(taskId);
 		} catch (error) {
 			this.processing.remove(taskId);
 			throw error;

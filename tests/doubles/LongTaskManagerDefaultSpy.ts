@@ -11,9 +11,9 @@ import {LongTaskSettings} from "../../src/Domain/LongTaskSettings";
 import {LongTaskRegistry} from "../../src/Domain/LongTaskRegistry";
 import {LongTaskRepository} from "../../src/Domain/LongTaskRepository";
 import {LongTaskParameters} from "../../src/Domain/LongTaskParameters";
-import {LongTaskManagerImp} from "../../src/Domain/LongTaskManagerImp";
+import {LongTaskManagerDefault} from "../../src/Domain/LongTaskManagerDefault";
 
-export class LongTaskManagerImpSpy extends LongTaskManagerImp {
+export class LongTaskManagerDefaultSpy extends LongTaskManagerDefault {
     private startCallCount: number;
     private createTaskCallCount: number;
     private updateTaskProgressCallCount: number;

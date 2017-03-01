@@ -3,7 +3,7 @@ import {DownloadMediaLongTaskRequest} from "./DownloadMediaLongTaskRequest";
 
 class Demo {
 	public start() {
-		const system = new FGSystem();
+		const system = FGSystem.makeLongTaskManager();
 		const downloadMedia = new DownloadMediaLongTaskRequest(system.manager);
 
 		const urls1 = [

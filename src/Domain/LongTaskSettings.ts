@@ -1,7 +1,7 @@
 import {Duration} from "../Shared/Values/Duration";
 
 export interface LongTaskSettings {
-	cleanupDelay: Duration;
+	cleanupThreshold: Duration;
 	concurrencyMaximum: number;
 	backoffStepTime: Duration;
 	backoffMaximumTime: Duration;

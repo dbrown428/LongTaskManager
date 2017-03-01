@@ -8,6 +8,7 @@ interface DictionaryEntry <T> {
 	[K: string]: T;
 }
 
+// Remove.
 export class LongTaskRegistryImp implements LongTaskRegistry {
 	private tasks: Dictionary <LongTask> = {};
 

@@ -12,8 +12,8 @@ import {BackoffDummy} from "../../../src/Shared/Backoff/BackoffDummy";
 import {LongTaskRegistry} from "../../../src/Domain/LongTaskRegistry";
 import {LongTaskProgress} from "../../../src/Domain/LongTaskProgress";
 import {LoggerSuppress} from "../../../src/Shared/Log/LoggerSuppress";
-import {LongTaskManagerImpSpy} from "../../doubles/LongTaskManagerImpSpy";
-import {LongTaskManagerImp} from "../../../src/Domain/LongTaskManagerImp";
+import {LongTaskManagerDefaultSpy} from "../../doubles/LongTaskManagerDefaultSpy";
+import {LongTaskManagerDefault} from "../../../src/Domain/LongTaskManagerDefault";
 import {LongTaskRegistryImp} from "../../../src/Domain/LongTaskRegistryImp";
 import {MultipleItemsLongTaskParameters} from "../../doubles/MultipleItemsLongTaskParameters";
 import {LongTaskParametersDummy} from "../../doubles/LongTaskParametersDummy";
@@ -39,7 +39,7 @@ describe("Long task manager", () => {
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
-		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+		const manager = new LongTaskManagerDefault(logger, backoff, config, tracker, repository, processors);
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
@@ -63,7 +63,7 @@ describe("Long task manager", () => {
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
-		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+		const manager = new LongTaskManagerDefault(logger, backoff, config, tracker, repository, processors);
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
@@ -85,7 +85,7 @@ describe("Long task manager", () => {
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
-		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+		const manager = new LongTaskManagerDefault(logger, backoff, config, tracker, repository, processors);
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
 		const searchKey = "hello";
@@ -108,7 +108,7 @@ describe("Long task manager", () => {
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const settings = new LongTaskSettingsDevelopment;
-		const manager = new LongTaskManagerImp(logger, backoff, settings, tracker, repository, processorsRegistry);
+		const manager = new LongTaskManagerDefault(logger, backoff, settings, tracker, repository, processorsRegistry);
 
 		const params = new LongTaskParametersDummy;
 		const ownerId = UserId.withValue("321");
@@ -133,7 +133,7 @@ describe("Long task manager", () => {
 		const validator = new LongTaskStatusChangeValidator;	// should this be in the layer above?
 		const repository = new LongTaskRepositoryArray(validator);
 		const settings = new LongTaskSettingsDevelopment;
-		const manager = new LongTaskManagerImpSpy(logger, backoff, settings, tracker, repository, processorsRegistry);
+		const manager = new LongTaskManagerDefault(logger, backoff, settings, tracker, repository, processorsRegistry);
 
 		const params = MultipleItemsLongTaskParameters.withSampleItems([1, 2, 3, 4, 5]);
 		const ownerId = UserId.withValue("321");
@@ -162,7 +162,7 @@ describe("Long task manager", () => {
 		const repository = new LongTaskRepositoryArray(validator);
 		const tracker = new LongTaskTrackerArray;
 		const backoff = BaseTwoExponentialBackoff.withMultiplierAndMaximum(settings.backoffStepTime, settings.backoffMaximumTime);
-		const manager = new LongTaskManagerImp(logger, backoff, settings, tracker, repository, registry);
+		const manager = new LongTaskManagerDefault(logger, backoff, settings, tracker, repository, registry);
 		
 		const type = delayedResultsProcessorConfig.key();
 		const params = new LongTaskParametersDummy;
@@ -190,7 +190,7 @@ describe("Long task manager", () => {
 		const validator = new LongTaskStatusChangeValidator;
 		const repository = new LongTaskRepositoryArray(validator);
 		const config = new LongTaskSettingsDevelopment;
-		const manager = new LongTaskManagerImp(logger, backoff, config, tracker, repository, processors);
+		const manager = new LongTaskManagerDefault(logger, backoff, config, tracker, repository, processors);
 
 		const type = LongTaskType.withValue("awesome-task");
 		const params = "{key:value}";
@@ -222,8 +222,11 @@ describe("Long task manager", () => {
 
 
 
+	// if the tick throws an exception... we want a call stack to be dumped.
+	it("should handle an unexpected task error.");
 
-	it("should handle an unexpected completed task error.");
+
+
 	it("should update status to failed for a processing task.");
 
 	describe("cancel task", () => {
